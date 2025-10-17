@@ -1,12 +1,12 @@
 // --- CONFIGURAÇÕES GLOBAIS ---
 
 // Dimensões do grid (quantidade de células)
-const COLS = 40;
-const ROWS = 30;
+const COLS = 30;
+const ROWS = 25;
 
 // Tamanho da tela em pixels
-const CANVAS_WIDTH = 800;
-const CANVAS_HEIGHT = 600;
+const CANVAS_WIDTH = 1920;
+const CANVAS_HEIGHT = 1080;
 
 // Variáveis para guardar o tamanho de cada célula
 let cellWidth;
