@@ -1,12 +1,12 @@
 // --- CONFIGURAÇÕES GLOBAIS ---
 
 // Dimensões do grid (quantidade de células)
-const COLS = 30;
-const ROWS = 25;
+const COLS = 40;
+const ROWS = 30;
 
 // Tamanho da tela em pixels
-const CANVAS_WIDTH = 1000;
-const CANVAS_HEIGHT = 700;
+const CANVAS_WIDTH = 800;
+const CANVAS_HEIGHT = 600;
 
 // Variáveis para guardar o tamanho de cada célula
 let cellWidth;
@@ -16,8 +16,11 @@ let cellHeight;
 let grid = [];
 
 // *** ALTERADO: ***
-// Por enquanto, teremos apenas um tipo de terreno.
-const TERRAIN_DEFAULT = 0;
+// Reintroduzindo as constantes para os 4 tipos de terreno
+const TERRAIN_LOW_COST = 0;   // Custo baixo (areia)
+const TERRAIN_MEDIUM_COST = 1; // Custo médio (atoleiro)
+const TERRAIN_HIGH_COST = 2;  // Custo alto (água)
+const OBSTACLE = 3;           // Obstáculo
 
 // --- FUNÇÃO DE SETUP DO P5.JS ---
 // É executada apenas uma vez, no início.
@@ -29,8 +32,10 @@ function setup() {
   cellHeight = CANVAS_HEIGHT / ROWS;
 
   // *** ALTERADO: ***
-  // Chamamos a nova função que cria um grid uniforme.
-  initializeGrid();
+  // Gera o mapa aleatório pela primeira vez
+  generateRandomMap();
+  
+  console.log("Mapa gerado. Pressione qualquer tecla para gerar um novo mapa.");
 }
 
 // --- FUNÇÃO DE DRAW DO P5.JS ---
@@ -38,23 +43,35 @@ function setup() {
 function draw() {
   background(51); // Fundo escuro
   
-  // Desenha o grid na tela
+  // Desenha o grid na tela a cada frame
   drawGrid();
 }
 
-// --- FUNÇÃO PARA CRIAR O GRID UNIFORME ---
-// *** ALTERADO: Esta função substitui a 'generateRandomMap' ***
-function initializeGrid() {
+// --- FUNÇÃO PARA GERAR O MAPA ALEATÓRIO ---
+// *** ALTERADO: Esta função substitui a 'initializeGrid' ***
+function generateRandomMap() {
   // Inicializa o array do grid
   grid = new Array(COLS);
   for (let i = 0; i < COLS; i++) {
     grid[i] = new Array(ROWS);
   }
 
-  // Preenche cada célula com o mesmo tipo de terreno
+  // Preenche cada célula com um tipo de terreno aleatório
   for (let i = 0; i < COLS; i++) {
     for (let j = 0; j < ROWS; j++) {
-      grid[i][j] = TERRAIN_DEFAULT;
+      let r = random(1); // Gera um número aleatório entre 0 e 1
+
+      // Define as probabilidades de cada terreno aparecer
+      // Sinta-se à vontade para ajustar estes valores!
+      if (r < 0.15) { // 15% de chance de ser um obstáculo
+        grid[i][j] = OBSTACLE;
+      } else if (r < 0.35) { // 20% de chance de ser água
+        grid[i][j] = TERRAIN_HIGH_COST;
+      } else if (r < 0.60) { // 25% de chance de ser atoleiro
+        grid[i][j] = TERRAIN_MEDIUM_COST;
+      } else { // 40% de chance de ser areia
+        grid[i][j] = TERRAIN_LOW_COST;
+      }
     }
   }
 }
@@ -66,12 +83,25 @@ function drawGrid() {
     for (let j = 0; j < ROWS; j++) {
       
       // *** ALTERADO: ***
-      // Definimos uma cor única para todas as células.
-      // Um cinza claro é uma boa cor base.
-      fill(200); 
+      // Define a cor com base no tipo de terreno usando um switch
+      let terrainType = grid[i][j];
+      switch (terrainType) {
+        case TERRAIN_LOW_COST:
+          fill(240, 230, 140); // Amarelo (Areia)
+          break;
+        case TERRAIN_MEDIUM_COST:
+          fill(139, 69, 19);  // Marrom (Atoleiro)
+          break;
+        case TERRAIN_HIGH_COST:
+          fill(70, 130, 180);  // Azul (Água)
+          break;
+        case OBSTACLE:
+          fill(105, 105, 105); // Cinza (Obstáculo)
+          break;
+      }
 
-      // Mantemos a borda para visualizar a grade
-      stroke(40); 
+      // Desenha o retângulo da célula
+      stroke(40); // Borda para as células
       rect(i * cellWidth, j * cellHeight, cellWidth, cellHeight);
     }
   }
@@ -79,10 +109,8 @@ function drawGrid() {
 
 // --- FUNÇÃO DE INTERAÇÃO ---
 // *** ALTERADO: ***
-// Comentamos esta função, pois gerar um novo mapa não mudará a aparência.
-/*
+// Reativamos a função para gerar um novo mapa aleatório
 function keyPressed() {
-  initializeGrid();
-  console.log("Grid reinicializado!");
+  generateRandomMap();
+  console.log("Novo mapa gerado!");
 }
-*/
