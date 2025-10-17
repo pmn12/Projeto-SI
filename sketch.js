@@ -76,3 +76,13 @@ function drawGrid() {
     }
   }
 }
+
+// --- FUNÇÃO DE INTERAÇÃO ---
+// *** ALTERADO: ***
+// Comentamos esta função, pois gerar um novo mapa não mudará a aparência.
+/*
+function keyPressed() {
+  initializeGrid();
+  console.log("Grid reinicializado!");
+}
+*/
