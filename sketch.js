@@ -5,8 +5,8 @@ const COLS = 30;
 const ROWS = 25;
 
 // Tamanho da tela em pixels
-const CANVAS_WIDTH = 1920;
-const CANVAS_HEIGHT = 1080;
+const CANVAS_WIDTH = 1000;
+const CANVAS_HEIGHT = 700;
 
 // Variáveis para guardar o tamanho de cada célula
 let cellWidth;
