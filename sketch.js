@@ -12,15 +12,32 @@ let grid = [];
 let agent;
 let food;
 
+// NOVO: Variáveis para guardar as IMAGENS
+let imgAgent;
+let imgFood;
+
 // Constantes dos tipos de terreno
 const TERRAIN_LOW_COST = 0;   // Areia
 const TERRAIN_MEDIUM_COST = 1; // Atoleiro
 const TERRAIN_HIGH_COST = 2;  // Água
 const OBSTACLE = 3;           // Obstáculo
 
+// --- NOVO: FUNÇÃO PRELOAD DO P5.JS ---
+// Esta função é executada ANTES do setup()
+// Garantindo que todas as mídias estejam carregadas
+function preload() {
+  imgAgent = loadImage('agent.png');
+  imgFood = loadImage('food.png');
+}
+
 // --- FUNÇÃO DE SETUP DO P5.JS ---
 function setup() {
   createCanvas(CANVAS_WIDTH, CANVAS_HEIGHT);
+
+  // NOVO: Define o modo de desenhar imagens.
+  // CENTER significa que as coordenadas (x, y) que passarmos
+  // serão o centro da imagem, o que facilita muito.
+  imageMode(CENTER);
 
   cellWidth = CANVAS_WIDTH / COLS;
   cellHeight = CANVAS_HEIGHT / ROWS;
@@ -43,11 +60,36 @@ function draw() {
   drawGrid();
   
   // NOVO: 2. Desenha a comida por cima do grid
-  drawFood();
+function drawFood() {
+  // NOVO: Verifica se a imagem já foi carregada
+  if (!food || !imgFood) return; 
+
+  // Calcula o centro da célula (exatamente como antes)
+  let cx = (food.x + 0.5) * cellWidth;
+  let cy = (food.y + 0.5) * cellHeight;
   
+  // REMOVEMOS: fill(), stroke(), ellipse()...
+
+  // NOVO: Desenha a imagem da comida
+  // Usamos 0.6 * cellWidth para a comida ser um pouco menor
+  image(imgFood, cx, cy, cellWidth * 0.6, cellHeight * 0.6);
+}  
   // NOVO: 3. Desenha o agente por cima do grid
-  drawAgent();
-}
+function drawAgent() {
+  // NOVO: Verifica se a imagem já foi carregada
+  if (!agent || !imgAgent) return; 
+
+  // Calcula o centro da célula (exatamente como antes)
+  let cx = (agent.x + 0.5) * cellWidth;
+  let cy = (agent.y + 0.5) * cellHeight;
+
+  // REMOVEMOS: fill(), stroke(), triangle()...
+  
+  // NOVO: Desenha a imagem do agente
+  // image(imagem, x_centro, y_centro, largura, altura)
+  // Usamos 0.8 * cellWidth para a imagem ser um pouco menor que a célula
+  image(imgAgent, cx, cy, cellWidth * 0.8, cellHeight * 0.8);
+}}
 
 // --- FUNÇÃO PARA GERAR O MAPA ALEATÓRIO ---
 function generateRandomMap() {
