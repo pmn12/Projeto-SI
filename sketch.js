@@ -24,7 +24,7 @@ let btnStart;
 let currentPath = []; // Array de Nós do caminho encontrado
 let pathIndex = 0;    // Em qual nó do caminho o agente está
 let movementTimer = 0; // Timer para controlar a velocidade de movimento
-
+let collectionTimer = 0; // Timer para o delay de coleta de 10s
 
 // --- FUNÇÃO PRELOAD DO P5.JS ---
 function preload() {
@@ -51,32 +51,14 @@ function setup() {
 // --- FUNÇÃO DE DRAW DO P5.JS ---
 function draw() {
   background(51); 
-  
-  // 1. Desenha o grid (terrenos)
   drawGrid();
   
   // 2. LÓGICA DE ANIMAÇÃO DA BUSCA
   if (gameState === 'SEARCHING' && currentSearch) {
-    currentSearch.step(); 
-
-    // Verifica se a busca terminou
-    if (currentSearch.status === 'FOUND') {
-      gameState = 'MOVING';
-      
-      // Inicializa o movimento
-      currentPath = currentSearch.path; // Salva o caminho
-      pathIndex = 0; // Começa do primeiro nó (posição inicial)
-      movementTimer = millis(); // Reseta o timer de movimento
-      
-      console.log("Caminho encontrado!");
-      
-    } else if (currentSearch.status === 'FAILED') {
-      gameState = 'IDLE';
-      console.log("Não foi possível encontrar um caminho!");
-    }
+    // ... (esta parte continua igual) ...
   }
   
-  // 3. DESENHA A VISUALIZAÇÃO (VISITADOS / FRONTEIRA)
+  // 3. DESENHA A VISUALIZAÇÃO
   if (currentSearch) {
     drawSearchVisualization();
   }
@@ -86,13 +68,23 @@ function draw() {
     handleAgentMovement(); // Chama a função de movimento
   }
   
-  // 5. DESENHA O CAMINHO FINAL
+  // 5. NOVO: LÓGICA DE DELAY DE 10 SEGUNDOS
+  if (gameState === 'COLLECTING') {
+    // Agente fica parado enquanto o timer roda
+    if (millis() - collectionTimer > 10000) { // 10000 milissegundos = 10s
+      // O delay acabou! Inicia a próxima rodada.
+      handleFoodCollection(); 
+    }
+  }
+  
+  // 6. DESENHA O CAMINHO FINAL
   if (currentPath.length > 0) {
     drawFinalPath(currentPath); 
   }
   
-  // 6. Desenha a comida e o agente por cima de tudo
-  drawFood();
+  // 7. Desenha a comida e o agente
+  // (A função drawFood() em entities.js já deve ter "if (!food) return;")
+  drawFood(); 
   drawAgent();
 }
 
@@ -253,10 +245,17 @@ function drawFinalPath(path) {
 // --- FUNÇÃO: CONTROLA O MOVIMENTO DO AGENTE ---
 // (Esta função estava faltando no seu arquivo)
 function handleAgentMovement() {
-  // 1. Verifica se já chegou ao fim do caminho
+// 1. Verifica se já chegou ao fim do caminho
   if (pathIndex >= currentPath.length - 1) {
-    handleFoodCollection();
-    return;
+    
+    // *** MUDANÇA AQUI ***
+    // Em vez de chamar handleFoodCollection(), iniciamos o delay.
+    gameState = 'COLLECTING';
+    collectionTimer = millis(); // Inicia o timer de 10s
+    food = null; // Faz a comida sumir
+    
+    console.log("Comida coletada! Aguardando 10s...");
+    return; // Para o movimento
   }
 
   // 2. Pega o PRÓXIMO nó
@@ -291,13 +290,13 @@ function handleAgentMovement() {
 // --- FUNÇÃO: CONTROLA O LOOP DO JOGO ---
 // (Esta função também estava faltando)
 function handleFoodCollection() {
-  console.log("Comida coletada!");
+  console.log("Delay acabou! Gerando nova comida e reiniciando a busca!");
   
   // 1. Gera uma nova comida
   food = findValidPosition();
   
   // 2. Reseta o estado
-  gameState = 'IDLE';
+  gameState = 'IDLE'; 
   currentSearch = null;
   currentPath = [];
   pathIndex = 0;
