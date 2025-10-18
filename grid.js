@@ -41,7 +41,7 @@ function drawGrid() {
           fill(70, 130, 180);  // Azul (Água)
           break;
         case OBSTACLE:
-          fill(0,0,0); // Cinza (Obstáculo)
+          fill(54,54,54); // Cinza (Obstáculo)
           break;
       }
 
