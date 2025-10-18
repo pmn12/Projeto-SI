@@ -98,6 +98,7 @@ function keyPressed() {
 
 // --- FUNÇÃO PARA CRIAR A UI (BOTÕES) ---
 // --- FUNÇÃO PARA CRIAR A UI (BOTÕES) ---
+// --- FUNÇÃO PARA CRIAR A UI (BOTÕES) ---
 function createUI() {
   // Cria os botões de seleção de algoritmo
   btnBFS = createButton('Busca em Largura (BFS)');
@@ -131,7 +132,7 @@ function createUI() {
   // Ativa o BFS por padrão
   btnBFS.addClass('active'); 
 
-  // --- O CÓDIGO QUE FALTAVA ESTÁ AQUI ---
+  // --- O CÓDIGO QUE ESTÁ FALTANDO É ESTE ---
   // Cria o parágrafo de status
   statusDisplay = createP('Carregando...'); // Cria um <p> com texto inicial
   statusDisplay.id('status-message'); // Dá a ele o ID "status-message" (para o CSS)
