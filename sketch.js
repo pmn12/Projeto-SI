@@ -98,7 +98,7 @@ if (gameState === 'SEARCHING' && currentSearch && (frameCount % 3 === 0)) {
   // 5. NOVO: LÓGICA DE DELAY DE 10 SEGUNDOS
   if (gameState === 'COLLECTING') {
     // Agente fica parado enquanto o timer roda
-    if (millis() - collectionTimer > 5000) { // 10000 milissegundos = 10s
+    if (millis() - collectionTimer > 5000) {
       // O delay acabou! Inicia a próxima rodada.
       handleFoodCollection(); 
     }
@@ -334,7 +334,7 @@ function handleAgentMovement() {
       gameState = 'COLLECTING';
       collectionTimer = millis(); 
       food = null; // Comida desaparece
-      updateStatusMessage("Comida coletada! Aguardando 10s para a próxima rodada...");
+      updateStatusMessage("Comida coletada! Aguardando 5s para a próxima rodada...");
       return;
     }
 
