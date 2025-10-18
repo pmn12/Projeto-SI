@@ -97,8 +97,9 @@ function keyPressed() {
 }
 
 // --- FUNÇÃO PARA CRIAR A UI (BOTÕES) ---
+// --- FUNÇÃO PARA CRIAR A UI (BOTÕES) ---
 function createUI() {
-  // Cria os botões
+  // Cria os botões de seleção de algoritmo
   btnBFS = createButton('Busca em Largura (BFS)');
   btnDFS = createButton('Busca em Profundidade (DFS)');
   btnUCS = createButton('Custo Uniforme (UCS)');
@@ -125,11 +126,16 @@ function createUI() {
   // Botão Iniciar
   btnStart = createButton('INICIAR BUSCA');
   btnStart.parent('controls');
-
   btnStart.mousePressed(startSearch);
   
   // Ativa o BFS por padrão
   btnBFS.addClass('active'); 
+
+  // --- O CÓDIGO QUE FALTAVA ESTÁ AQUI ---
+  // Cria o parágrafo de status
+  statusDisplay = createP('Carregando...'); // Cria um <p> com texto inicial
+  statusDisplay.id('status-message'); // Dá a ele o ID "status-message" (para o CSS)
+  statusDisplay.parent('message-container'); // Coloca ele dentro da div <div id="message-container">
 }
 
 // --- FUNÇÃO CHAMADA PELOS BOTÕES DE ALGORITMO ---
