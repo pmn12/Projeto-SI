@@ -29,6 +29,10 @@ let collectionTimer = 0; // Timer para o delay de coleta de 10s
 // NOVO: Variável para guardar nosso elemento <p> de status
 let statusDisplay;
 
+// NOVO: Variáveis para o log de mensagens
+let messageLog = [];
+const MAX_LOG_LINES = 3;
+
 // --- FUNÇÃO PRELOAD DO P5.JS ---
 function preload() {
   imgAgent = loadImage('agent.png');
@@ -78,7 +82,7 @@ function draw() {
       
     } else if (currentSearch.status === 'FAILED') {
       gameState = 'IDLE';
-      statusDisplay.html("Falha na busca: Não foi possível encontrar um caminho!");
+      updateStatusMessage("Falha na busca: Não foi possível encontrar um caminho!");
     }
   }
   
@@ -157,6 +161,7 @@ function createUI() {
   statusDisplay = createP('Carregando...'); // Cria um <p> com texto inicial
   statusDisplay.id('status-message'); // Dá a ele o ID "status-message" (para o CSS)
   statusDisplay.parent('message-container'); // Coloca ele dentro da div <div id="message-container">
+  messageLog = ['Carregando...'];
 }
 
 // --- FUNÇÃO CHAMADA PELOS BOTÕES DE ALGORITMO ---
@@ -164,7 +169,7 @@ function selectAlgorithm(algo, clickedButton, allButtons) {
   if (gameState === 'SEARCHING') return; 
 
   currentAlgorithm = algo;
-  statusDisplay.html("Algoritmo selecionado:", currentAlgorithm);
+  updateStatusMessage("Algoritmo selecionado:", currentAlgorithm);
 
   for (let btn of allButtons) {
     btn.removeClass('active');
@@ -212,7 +217,7 @@ function startSearch() {
     // Inicia a busca
     if (currentSearch) {
       gameState = 'SEARCHING';
-      statusDisplay.html(`Iniciando busca com ${currentAlgorithm}!`);
+      updateStatusMessage(`Iniciando busca com ${currentAlgorithm}!`);
     }
   }
 }
@@ -227,10 +232,28 @@ function generateNewWorld() {
   currentSearch = null; 
   
   // Reseta as variáveis de caminho
-  currentPath = [];
+  messageLog = [];
   pathIndex = 0;
   
-  statusDisplay.html("Novo mapa gerado. Selecione um algoritmo.");
+updateStatusMessage("Novo mapa gerado. Selecione um algoritmo.");}
+
+// --- NOVA FUNÇÃO: ATUALIZA O LOG DE STATUS ---
+function updateStatusMessage(newMessage) {
+  // 1. Adiciona a nova mensagem ao log
+  messageLog.push(newMessage);
+
+  // 2. Se o log tiver mais de 3 linhas, remove a mais antiga
+  if (messageLog.length > MAX_LOG_LINES) {
+    messageLog.shift(); // Remove o primeiro item (o mais antigo)
+  }
+
+  // 3. Constrói a string HTML com quebras de linha
+  let htmlString = messageLog.join('<br>');
+
+  // 4. Atualiza o display
+  if (statusDisplay) { // Garante que o display já foi criado
+   updateStatusMessage(htmlString);
+  }
 }
 
 // --- FUNÇÃO PARA DESENHAR A ANIMAÇÃO DA BUSCA ---
@@ -307,7 +330,7 @@ function handleAgentMovement() {
       gameState = 'COLLECTING';
       collectionTimer = millis(); 
       food = null; // Comida desaparece
-      statusDisplay.html("Comida coletada! Aguardando 10s para a próxima rodada...");
+      updateStatusMessage("Comida coletada! Aguardando 10s para a próxima rodada...");
       return;
     }
 
@@ -328,7 +351,7 @@ function handleAgentMovement() {
 // --- FUNÇÃO: CONTROLA O LOOP DO JOGO ---
 // (Esta função também estava faltando)
 function handleFoodCollection() {
-  statusDisplay.html("Delay acabou! Gerando nova comida e reiniciando a busca!");
+ updateStatusMessage("Delay acabou! Gerando nova comida e reiniciando a busca!");
   
   // 1. Gera uma nova comida
   food = findValidPosition();
