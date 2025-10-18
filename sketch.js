@@ -26,6 +26,9 @@ let pathIndex = 0;    // Em qual nó do caminho o agente está
 let movementTimer = 0; // Timer para controlar a velocidade de movimento
 let collectionTimer = 0; // Timer para o delay de coleta de 10s
 
+// NOVO: Variável para guardar nosso elemento <p> de status
+let statusDisplay;
+
 // --- FUNÇÃO PRELOAD DO P5.JS ---
 function preload() {
   imgAgent = loadImage('agent.png');
@@ -134,12 +137,16 @@ function selectAlgorithm(algo, clickedButton, allButtons) {
   if (gameState === 'SEARCHING') return; 
 
   currentAlgorithm = algo;
-  console.log("Algoritmo selecionado:", currentAlgorithm);
+  statusDisplay.html("Algoritmo selecionado:", currentAlgorithm);
 
   for (let btn of allButtons) {
     btn.removeClass('active');
   }
   clickedButton.addClass('active');
+
+  statusDisplay = createP('Carregando...'); // Cria um <p> com texto inicial
+  statusDisplay.id('status-message'); // Dá a ele o ID "status-message"
+  statusDisplay.parent('message-container'); // Coloca ele dentro da div que criamos
 }
 
 // --- FUNÇÃO CHAMADA PELO BOTÃO "INICIAR BUSCA" ---
@@ -178,7 +185,7 @@ function startSearch() {
     // Inicia a busca
     if (currentSearch) {
       gameState = 'SEARCHING';
-      console.log(`Iniciando busca com ${currentAlgorithm}!`);
+      statusDisplay.html(`Iniciando busca com ${currentAlgorithm}!`);
     }
   }
 }
@@ -196,7 +203,7 @@ function generateNewWorld() {
   currentPath = [];
   pathIndex = 0;
   
-  console.log("Novo mapa gerado. Selecione um algoritmo.");
+  statusDisplay.html("Novo mapa gerado. Selecione um algoritmo.");
 }
 
 // --- FUNÇÃO PARA DESENHAR A ANIMAÇÃO DA BUSCA ---
@@ -254,7 +261,7 @@ function handleAgentMovement() {
     collectionTimer = millis(); // Inicia o timer de 10s
     food = null; // Faz a comida sumir
     
-    console.log("Comida coletada! Aguardando 10s...");
+    statusDisplay.html("Comida coletada! Aguardando 10s...");
     return; // Para o movimento
   }
 
@@ -290,7 +297,7 @@ function handleAgentMovement() {
 // --- FUNÇÃO: CONTROLA O LOOP DO JOGO ---
 // (Esta função também estava faltando)
 function handleFoodCollection() {
-  console.log("Delay acabou! Gerando nova comida e reiniciando a busca!");
+  statusDisplay.html("Delay acabou! Gerando nova comida e reiniciando a busca!");
   
   // 1. Gera uma nova comida
   food = findValidPosition();
