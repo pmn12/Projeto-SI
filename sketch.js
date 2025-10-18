@@ -249,3 +249,30 @@ function drawFinalPath(path) {
   }
   endShape();
 }
+function handleAgentMovement() {
+  // ... (código para verificar o fim do caminho) ...
+
+  let nextNode = currentPath[pathIndex + 1];
+  let cost = getCellCost(nextNode.x, nextNode.y); // Pega o custo do terreno
+
+  // --- A VELOCIDADE É DEFINIDA AQUI ---
+  
+  // 1. Define o ATRASO (delay) em milissegundos
+  let delay = 100; // 100ms para Custo Baixo (areia)
+  if (cost === 5) { // 400ms para Custo Médio (atoleiro)
+    delay = 400; 
+  } else if (cost === 10) { // 800ms para Custo Alto (água)
+    delay = 800;
+  }
+  // ------------------------------------
+
+  // 2. Verifica se o tempo (millis()) passou do atraso
+  if (millis() - movementTimer > delay) {
+    // 3. Se passou, move o agente
+    pathIndex++;
+    let newPosNode = currentPath[pathIndex];
+    agent.x = newPosNode.x;
+    agent.y = newPosNode.y;
+    movementTimer = millis(); // Reseta o timer
+  }
+}
