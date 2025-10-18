@@ -278,27 +278,18 @@ function drawFinalPath(path) {
 
 // --- FUNÇÃO: CONTROLA O MOVIMENTO DO AGENTE ---
 // (Esta função estava faltando no seu arquivo)
+// --- FUNÇÃO: CONTROLA O MOVIMENTO DO AGENTE ---
+// (Versão corrigida: o delay é pago no terreno ATUAL)
 function handleAgentMovement() {
-// 1. Verifica se já chegou ao fim do caminho
-  if (pathIndex >= currentPath.length - 1) {
-    
-    // *** MUDANÇA AQUI ***
-    // Em vez de chamar handleFoodCollection(), iniciamos o delay.
-    gameState = 'COLLECTING';
-    collectionTimer = millis(); // Inicia o timer de 10s
-    food = null; // Faz a comida sumir
-    
-    statusDisplay.html("Comida coletada! Aguardando 10s...");
-    return; // Para o movimento
-  }
+  
+  // 1. Pega o nó ONDE O AGENTE ESTÁ AGORA
+  let currentNode = currentPath[pathIndex];
 
-  // 2. Pega o PRÓXIMO nó
-  let nextNode = currentPath[pathIndex + 1];
+  // 2. Pega o CUSTO do terreno ATUAL
+  let cost = getCellCost(currentNode.x, currentNode.y);
 
-  // 3. Pega o CUSTO do terreno
-  let cost = getCellCost(nextNode.x, nextNode.y);
-
-  // 4. Define o DELAY (Aumente estes valores para testar)
+  // 3. Define o DELAY com base no terreno ATUAL
+  // (Sinta-se à vontade para ajustar estes valores)
   let delay = 100; // Custo baixo (areia)
   if (cost === 5) { // Custo médio (atoleiro)
     delay = 500;
@@ -306,17 +297,30 @@ function handleAgentMovement() {
     delay = 1000; // (1 segundo)
   }
 
-  // 5. Verifica se o timer passou do delay
+  // 4. Verifica se o timer (o tempo de espera no terreno ATUAL) já passou
   if (millis() - movementTimer > delay) {
-    // 6. Avança para o próximo passo
+    
+    // 5. O tempo de espera acabou. Vamos ver se já chegamos ao fim.
+    if (pathIndex >= currentPath.length - 1) {
+      // Se sim, o agente estava esperando no último nó (o da comida).
+      // Agora iniciamos o timer de 10s de coleta.
+      gameState = 'COLLECTING';
+      collectionTimer = millis(); 
+      food = null; // Comida desaparece
+      statusDisplay.html("Comida coletada! Aguardando 10s para a próxima rodada...");
+      return;
+    }
+
+    // 6. Se não, hora de mover para o PRÓXIMO nó.
     pathIndex++;
     
-    // 7. ATUALIZA A POSIÇÃO REAL DO AGENTE
+    // 7. ATUALIZA A POSIÇÃO REAL DO AGENTE (movimento instantâneo)
     let newPosNode = currentPath[pathIndex];
     agent.x = newPosNode.x;
     agent.y = newPosNode.y;
     
-    // 8. Reseta o timer
+    // 8. Reseta o timer. O agente começa a "pagar o pedágio"
+    //    do NOVO terreno em que ele acabou de pisar.
     movementTimer = millis();
   }
 }
