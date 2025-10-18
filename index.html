@@ -5,33 +5,69 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Agente Coletor - Busca IA</title>
   
-<style>
-    /* Estilo para centralizar o canvas na tela */
+  <style>
+    /* Estilo para centralizar tudo */
     body {
       padding: 0;
       margin: 0;
       background-color: #1b1b1b;
       display: flex;
-      
-      flex-direction: column; /* <-- ADICIONE ESTA LINHA */
-      
+      flex-direction: column; /* Empilha o grid e os botões */
       justify-content: center;
       align-items: center;
       height: 100vh;
+    }
+
+    /* Estilo para o contêiner dos botões */
+    #controls {
+      display: flex;
+      flex-direction: row;     /* Botões em linha */
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 15px;      /* Espaço entre o grid e os botões */
+    }
+
+    /* Estilo dos botões */
+    button {
+      padding: 8px 12px;
+      margin: 4px;
+      font-size: 14px;
+      border: 2px solid #555;
+      background-color: #333;
+      color: white;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+    
+    button:hover {
+      background-color: #444;
+    }
+
+    button.active {
+      background-color: #007bff;
+      border-color: #007bff;
     }
   </style>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.js"></script>
   
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/addons/p5.dom.min.js"></script>
+  
   <script src="config.js"></script>
-  
-  <script src="grid.js"></script>
-  
+  <script src="utils.js"></script> <script src="grid.js"></script>
   <script src="entities.js"></script>
-
+  
+  <script src="bfs.js"></script>
+  <script src="dfs.js"></script>
+  <script src="ucs.js"></script>
+  <script src="greedy.js"></script>
+  <script src="astar.js"></script>
+  
   <script src="sketch.js"></script>
   
 </head>
+
 <body>
+  <div id="controls"></div>
   </body>
 </html>
