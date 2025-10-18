@@ -258,11 +258,11 @@ function handleAgentMovement() {
   // --- A VELOCIDADE É DEFINIDA AQUI ---
   
   // 1. Define o ATRASO (delay) em milissegundos
-  let delay = 100; // 100ms para Custo Baixo (areia)
+  let delay = 1000; // 100ms para Custo Baixo (areia)
   if (cost === 5) { // 400ms para Custo Médio (atoleiro)
-    delay = 400; 
+    delay = 4000; 
   } else if (cost === 10) { // 800ms para Custo Alto (água)
-    delay = 800;
+    delay = 8000;
   }
   // ------------------------------------
 
