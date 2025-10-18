@@ -12,32 +12,32 @@ let cellWidth;
 let cellHeight;
 
 // Variáveis para gerenciar o estado
-let currentSearch = null; // Guarda a instância da classe de busca (ex: new BfsSearch(...))
-let currentAlgorithm = 'BFS'; // Algoritmo padrão selecionado
-let gameState = 'IDLE';      // Estado atual (IDLE, SEARCHING, MOVING)
+let currentSearch = null; 
+let currentAlgorithm = 'BFS'; 
+let gameState = 'IDLE';      
 
 // Variáveis para guardar os botões da UI
 let btnBFS, btnDFS, btnUCS, btnGreedy, btnAstar;
 let btnStart;
 
+// --- VARIÁVEIS DO MOVIMENTO DO AGENTE ---
+let currentPath = []; // Array de Nós do caminho encontrado
+let pathIndex = 0;    // Em qual nó do caminho o agente está
+let movementTimer = 0; // Timer para controlar a velocidade de movimento
+
 
 // --- FUNÇÃO PRELOAD DO P5.JS ---
-// (Carrega as imagens antes do programa começar)
 function preload() {
   imgAgent = loadImage('agent.png');
   imgFood = loadImage('food.png');
 }
 
 // --- FUNÇÃO DE SETUP DO P5.JS ---
-// (Executada uma vez no início)
 function setup() {
-  
-frameRate(30);
-  
   createCanvas(CANVAS_WIDTH, CANVAS_HEIGHT);
-  imageMode(CENTER); // Facilita desenhar imagens pelo centro
+  imageMode(CENTER); 
 
-  // Calcula o tamanho das células com base nas configs
+  // Calcula o tamanho das células
   cellWidth = CANVAS_WIDTH / COLS;
   cellHeight = CANVAS_HEIGHT / ROWS;
 
@@ -49,8 +49,6 @@ frameRate(30);
 }
 
 // --- FUNÇÃO DE DRAW DO P5.JS ---
-// (Executada 60x por segundo em loop)
-// --- FUNÇÃO DE DRAW DO P5.JS ---
 function draw() {
   background(51); 
   
@@ -59,13 +57,19 @@ function draw() {
   
   // 2. LÓGICA DE ANIMAÇÃO DA BUSCA
   if (gameState === 'SEARCHING' && currentSearch) {
-    // 2a. Executa UM passo do algoritmo
     currentSearch.step(); 
 
-    // 2b. Verifica se a busca terminou
+    // Verifica se a busca terminou
     if (currentSearch.status === 'FOUND') {
       gameState = 'MOVING';
+      
+      // Inicializa o movimento
+      currentPath = currentSearch.path; // Salva o caminho
+      pathIndex = 0; // Começa do primeiro nó (posição inicial)
+      movementTimer = millis(); // Reseta o timer de movimento
+      
       console.log("Caminho encontrado!");
+      
     } else if (currentSearch.status === 'FAILED') {
       gameState = 'IDLE';
       console.log("Não foi possível encontrar um caminho!");
@@ -73,92 +77,91 @@ function draw() {
   }
   
   // 3. DESENHA A VISUALIZAÇÃO (VISITADOS / FRONTEIRA)
-  // *** MUDANÇA: Movido para fora do if(SEARCHING) ***
-  // Agora a "trilha" de visitados não vai sumir
   if (currentSearch) {
     drawSearchVisualization();
   }
   
-  // 4. DESENHA O CAMINHO FINAL
-  // (Só desenha se a busca achou e está no estado 'MOVING')
-  if (gameState === 'MOVING' && currentSearch && currentSearch.path) {
-    drawFinalPath(currentSearch.path); // Nova função!
+  // 4. LÓGICA DE MOVIMENTO DO AGENTE
+  if (gameState === 'MOVING' && currentPath.length > 0) {
+    handleAgentMovement(); // Chama a função de movimento
   }
   
-  // 5. Desenha a comida e o agente por cima de tudo
+  // 5. DESENHA O CAMINHO FINAL
+  if (currentPath.length > 0) {
+    drawFinalPath(currentPath); 
+  }
+  
+  // 6. Desenha a comida e o agente por cima de tudo
   drawFood();
   drawAgent();
 }
 
 // --- FUNÇÃO DE INTERAÇÃO (teclado) ---
 function keyPressed() {
-  // Se pressionar qualquer tecla, gera um novo mundo e reseta tudo
   generateNewWorld();
 }
 
 // --- FUNÇÃO PARA CRIAR A UI (BOTÕES) ---
-// (Esta é a função que você não achou)
 function createUI() {
-  // Cria os botões de seleção de algoritmo
+  // Cria os botões
   btnBFS = createButton('Busca em Largura (BFS)');
   btnDFS = createButton('Busca em Profundidade (DFS)');
   btnUCS = createButton('Custo Uniforme (UCS)');
   btnGreedy = createButton('Gulosa');
   btnAstar = createButton('A* (A-Estrela)');
   
-  // Diz aos botões para entrarem na div <div id="controls">
+  // Define o 'pai' (a div #controls)
   btnBFS.parent('controls');
   btnDFS.parent('controls');
   btnUCS.parent('controls');
   btnGreedy.parent('controls');
   btnAstar.parent('controls');
 
-  // Agrupa os botões de algoritmo em um array para facilitar
+  // Agrupa os botões de algoritmo
   let algoButtons = [btnBFS, btnDFS, btnUCS, btnGreedy, btnAstar];
 
-  // Vincula a função de callback a cada botão
+  // Vincula as funções de callback
   btnBFS.mousePressed(() => selectAlgorithm('BFS', btnBFS, algoButtons));
   btnDFS.mousePressed(() => selectAlgorithm('DFS', btnDFS, algoButtons));
   btnUCS.mousePressed(() => selectAlgorithm('UCS', btnUCS, algoButtons));
   btnGreedy.mousePressed(() => selectAlgorithm('Gulosa', btnGreedy, algoButtons));
   btnAstar.mousePressed(() => selectAlgorithm('A*', btnAstar, algoButtons));
 
-  // Botão principal para iniciar a busca
+  // Botão Iniciar
   btnStart = createButton('INICIAR BUSCA');
-  btnStart.parent('controls'); // Também entra na div 'controls'
+  btnStart.parent('controls');
+
   btnStart.mousePressed(startSearch);
   
-  // Seleciona o BFS como padrão visualmente (adiciona a classe CSS 'active')
+  // Ativa o BFS por padrão
   btnBFS.addClass('active'); 
 }
 
 // --- FUNÇÃO CHAMADA PELOS BOTÕES DE ALGORITMO ---
 function selectAlgorithm(algo, clickedButton, allButtons) {
-  // Não deixa trocar o algoritmo se a busca estiver em andamento
   if (gameState === 'SEARCHING') return; 
 
   currentAlgorithm = algo;
   console.log("Algoritmo selecionado:", currentAlgorithm);
 
-  // Feedback visual: Remove a classe 'active' de todos os botões
   for (let btn of allButtons) {
     btn.removeClass('active');
   }
-  // Adiciona a classe 'active' apenas no botão que foi clicado
   clickedButton.addClass('active');
 }
 
 // --- FUNÇÃO CHAMADA PELO BOTÃO "INICIAR BUSCA" ---
-// --- FUNÇÃO CHAMADA PELO BOTÃO "INICIAR BUSCA" ---
 function startSearch() {
-  // Só inicia se estiver ocioso ('IDLE')
   if (gameState === 'IDLE') {
     
-    // 1. Criar os Nós (agora funciona, pois 'utils.js' está carregado)
+    // Reseta o caminho anterior
+    currentPath = []; 
+    pathIndex = 0;
+    
     let startNode = new Node(agent.x, agent.y);
     let goalNode = new Node(food.x, food.y);
     
-    // 2. CONEXÃO DOS ALGORITMOS (Agora com todos DESCOMENTADOS)
+    // O 'switch' de integração
     switch (currentAlgorithm) {
       case 'BFS':
         currentSearch = new BfsSearch(startNode, goalNode);
@@ -180,33 +183,36 @@ function startSearch() {
         return;
     }
     
-    // 3. Muda o estado para 'SEARCHING'
+    // Inicia a busca
     if (currentSearch) {
       gameState = 'SEARCHING';
       console.log(`Iniciando busca com ${currentAlgorithm}!`);
     }
   }
 }
+
 // --- FUNÇÃO PARA GERAR O MUNDO E RESETAR ---
 function generateNewWorld() {
-  generateRandomMap(); // (Função do grid.js)
-  agent = findValidPosition(); // (Função do entities.js)
-  food = findValidPosition(); // (Função do entities.js)
+  generateRandomMap(); 
+  agent = findValidPosition(); 
+  food = findValidPosition(); 
   
-  gameState = 'IDLE'; // Reseta o estado
-  currentSearch = null; // Limpa a busca anterior
+  gameState = 'IDLE'; 
+  currentSearch = null; 
+  
+  // Reseta as variáveis de caminho
+  currentPath = [];
+  pathIndex = 0;
   
   console.log("Novo mapa gerado. Selecione um algoritmo.");
 }
 
 // --- FUNÇÃO PARA DESENHAR A ANIMAÇÃO DA BUSCA ---
-// (Esta é a tarefa da Pessoa 2, mas deixamos um placeholder)
-// --- FUNÇÃO PARA DESENHAR A ANIMAÇÃO DA BUSCA ---
 function drawSearchVisualization() {
-  if (!currentSearch) return; 
+  if (!currentSearch) return;
 
-  // 1. Desenha os nós VISITADOS (Sempre, após a busca iniciar)
-  fill(0, 255, 255, 100); // Ciano semi-transparente
+  // 1. Desenha os nós VISITADOS
+  fill(0, 255, 255, 100); 
   noStroke();
   if (currentSearch.visited && currentSearch.visited instanceof Set) {
     for (let node of currentSearch.visited) {
@@ -214,13 +220,11 @@ function drawSearchVisualization() {
     }
   }
 
-  // 2. Desenha a FRONTEIRA (Apenas DURANTE a busca)
-  // *** MUDANÇA: Adicionado "gameState === 'SEARCHING'" ***
+  // 2. Desenha a FRONTEIRA (apenas durante a busca)
   if (gameState === 'SEARCHING' && currentSearch.frontier) {
-    fill(0, 255, 0, 150); // Verde semi-transparente
+    fill(0, 255, 0, 150); 
     noStroke();
     
-    // Suporta Fila (BFS/DFS) e Fila de Prioridade (outros)
     let frontierArray = Array.isArray(currentSearch.frontier) ? currentSearch.frontier : currentSearch.frontier.items;
     
     if (frontierArray) {
@@ -231,25 +235,23 @@ function drawSearchVisualization() {
   }
 }
 
-// --- NOVA FUNÇÃO PARA DESENHAR O CAMINHO FINAL ---
+// --- FUNÇÃO PARA DESENHAR O CAMINHO FINAL ---
 function drawFinalPath(path) {
-  // Desenha uma linha amarela grossa no centro das células do caminho
   stroke(255, 255, 0); // Amarelo
   strokeWeight(4);
   noFill();
   
-  // Começa a desenhar a linha
   beginShape();
   for (let node of path) {
-    // Calcula o centro da célula
     let cx = (node.x + 0.5) * cellWidth;
     let cy = (node.y + 0.5) * cellHeight;
-    // Adiciona um vértice da linha nesse centro
     vertex(cx, cy);
   }
   endShape();
 }
-// --- NOVA FUNÇÃO: CONTROLA O MOVIMENTO DO AGENTE ---
+
+// --- FUNÇÃO: CONTROLA O MOVIMENTO DO AGENTE ---
+// (Esta função estava faltando no seu arquivo)
 function handleAgentMovement() {
   // 1. Verifica se já chegou ao fim do caminho
   if (pathIndex >= currentPath.length - 1) {
@@ -257,32 +259,49 @@ function handleAgentMovement() {
     return;
   }
 
-  // 2. Pega o PRÓXIMO nó para onde queremos ir
+  // 2. Pega o PRÓXIMO nó
   let nextNode = currentPath[pathIndex + 1];
 
-  // 3. Pega o CUSTO do terreno daquele próximo nó
+  // 3. Pega o CUSTO do terreno
   let cost = getCellCost(nextNode.x, nextNode.y);
 
-  // 4. Define o DELAY (em milissegundos) baseado no custo
-  // !!! TENTE AUMENTAR ESTES VALORES BASTANTE PARA TESTAR !!!
+  // 4. Define o DELAY (Aumente estes valores para testar)
   let delay = 100; // Custo baixo (areia)
   if (cost === 5) { // Custo médio (atoleiro)
-    delay = 1000; // (1 segundo)
+    delay = 500;
   } else if (cost === 10) { // Custo alto (água)
-    delay = 3000; // (3 segundos)
+    delay = 1000; // (1 segundo)
   }
-
-  // --- !!! ADICIONE ESTA LINHA PARA DEPURAR !!! ---
-  console.log(`Próximo passo: Custo ${cost}, Delay ${delay}ms`);
-  // ----------------------------------------------------
 
   // 5. Verifica se o timer passou do delay
   if (millis() - movementTimer > delay) {
-    // ... (resto da função é igual)
+    // 6. Avança para o próximo passo
     pathIndex++;
+    
+    // 7. ATUALIZA A POSIÇÃO REAL DO AGENTE
     let newPosNode = currentPath[pathIndex];
     agent.x = newPosNode.x;
     agent.y = newPosNode.y;
+    
+    // 8. Reseta o timer
     movementTimer = millis();
   }
+}
+
+// --- FUNÇÃO: CONTROLA O LOOP DO JOGO ---
+// (Esta função também estava faltando)
+function handleFoodCollection() {
+  console.log("Comida coletada!");
+  
+  // 1. Gera uma nova comida
+  food = findValidPosition();
+  
+  // 2. Reseta o estado
+  gameState = 'IDLE';
+  currentSearch = null;
+  currentPath = [];
+  pathIndex = 0;
+  
+  // 3. RECOMEÇA A BUSCA!
+  startSearch();
 }
