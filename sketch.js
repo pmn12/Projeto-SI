@@ -136,46 +136,44 @@ function selectAlgorithm(algo, clickedButton, allButtons) {
 }
 
 // --- FUNÇÃO CHAMADA PELO BOTÃO "INICIAR BUSCA" ---
+// --- FUNÇÃO CHAMADA PELO BOTÃO "INICIAR BUSCA" ---
 function startSearch() {
   // Só inicia se estiver ocioso ('IDLE')
   if (gameState === 'IDLE') {
     
-    // 1. Criar os Nós (depende da Pessoa 1 - Classe 'Node')
-    // Se a classe 'Node' ainda não existir no utils.js, isso dará erro.
+    // 1. Criar os Nós (agora funciona, pois 'utils.js' está carregado)
     let startNode = new Node(agent.x, agent.y);
     let goalNode = new Node(food.x, food.y);
     
-    // 2. CONEXÃO DOS ALGORITMOS (O "switch" da integração)
-    // (Depende das Pessoas 2, 3, 4 entregarem suas classes de busca)
+    // 2. CONEXÃO DOS ALGORITMOS (Agora com todos DESCOMENTADOS)
     switch (currentAlgorithm) {
       case 'BFS':
         currentSearch = new BfsSearch(startNode, goalNode);
         break;
       case 'DFS':
-        // currentSearch = new DfsSearch(startNode, goalNode);
+        currentSearch = new DfsSearch(startNode, goalNode);
         break;
       case 'UCS':
-        // currentSearch = new UcsSearch(startNode, goalNode);
+        currentSearch = new UcsSearch(startNode, goalNode);
         break;
       case 'Gulosa':
-        // currentSearch = new GreedySearch(startNode, goalNode);
+        currentSearch = new GreedySearch(startNode, goalNode);
         break;
       case 'A*':
-        // currentSearch = new AstarSearch(startNode, goalNode);
+        currentSearch = new AstarSearch(startNode, goalNode);
         break;
       default:
         console.error("Algoritmo desconhecido:", currentAlgorithm);
         return;
     }
     
-    // 3. Muda o estado para 'SEARCHING', ativando a animação no loop draw()
+    // 3. Muda o estado para 'SEARCHING'
     if (currentSearch) {
       gameState = 'SEARCHING';
       console.log(`Iniciando busca com ${currentAlgorithm}!`);
     }
   }
 }
-
 // --- FUNÇÃO PARA GERAR O MUNDO E RESETAR ---
 function generateNewWorld() {
   generateRandomMap(); // (Função do grid.js)
