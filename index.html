@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+s<!DOCTYPE html>
 <html lang="pt-br">
 <head>
   <meta charset="utf-8" />
@@ -47,6 +47,25 @@
       background-color: #007bff;
       border-color: #007bff;
     }
+
+    /* NOVO: Estilo para o contêiner de mensagens */
+    #message-container {
+      margin-top: 15px;
+      padding: 10px;
+      background-color: #000; /* Fundo preto */
+      border: 1px solid #333;
+      width: 800px; /* Mesma largura do canvas */
+      box-sizing: border-box; /* Garante que o padding não aumente a largura */
+    }
+
+    /* Estilo para o parágrafo da mensagem em si */
+    #status-message {
+      color: #00FF00; /* Cor verde "terminal" */
+      font-family: monospace;
+      font-size: 16px;
+      margin: 0;
+      padding: 0;
+    }
   </style>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.js"></script>
@@ -70,5 +89,6 @@
 
 <body>
   <div id="controls"></div>
+  <div id="message-container"></div>
   </body>
 </html>
