@@ -235,6 +235,7 @@ function generateNewWorld() {
   // Reseta as variáveis de caminho
   messageLog = [];
   pathIndex = 0;
+  currentPath = []; // Limpa a linha amarela da busca anterior
   
 updateStatusMessage("Novo mapa gerado. Selecione um algoritmo.");}
 
