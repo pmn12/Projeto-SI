@@ -261,23 +261,47 @@ function updateStatusMessage(newMessage) {
 }
 
 // --- FUNÇÃO PARA DESENHAR A ANIMAÇÃO DA BUSCA ---
+// --- FUNÇÃO PARA DESENHAR A ANIMAÇÃO DA BUSCA ---
+// (VERSÃO CORRIGIDA)
 function drawSearchVisualization() {
   if (!currentSearch) return;
 
-  // 1. Desenha os nós VISITADOS
-  fill(0, 255, 255, 100); 
+  // 1. Desenha os nós VISITADOS (Ciano)
+  fill(0, 255, 255, 100); // Ciano semi-transparente
   noStroke();
+
+  let visitedKeys;
+
+  // Checa se 'visited' é um Set (usado por BFS, DFS, Gulosa)
   if (currentSearch.visited && currentSearch.visited instanceof Set) {
-    for (let node of currentSearch.visited) {
-      rect(node.x * cellWidth, node.y * cellHeight, cellWidth, cellHeight);
+    visitedKeys = currentSearch.visited.keys();
+  } 
+  // Checa se 'costSoFar' é um Map (usado por A*, UCS)
+  else if (currentSearch.costSoFar && currentSearch.costSoFar instanceof Map) {
+    visitedKeys = currentSearch.costSoFar.keys();
+  }
+
+  // Se encontramos uma lista de chaves (ex: "10,5", "11,5"), desenha-as
+  if (visitedKeys) {
+    for (let key of visitedKeys) {
+      
+      // *** ESTA É A CORREÇÃO ***
+      // Converte o texto "x,y" de volta para números
+      let [x, y] = key.split(',').map(Number); // ex: "10,5" -> [10, 5]
+      
+      if (!isNaN(x) && !isNaN(y)) {
+        rect(x * cellWidth, y * cellHeight, cellWidth, cellHeight);
+      }
     }
   }
 
-  // 2. Desenha a FRONTEIRA (apenas durante a busca)
+  // 2. Desenha a FRONTEIRA (Verde)
+  // (Esta parte já estava correta)
   if (gameState === 'SEARCHING' && currentSearch.frontier) {
-    fill(0, 255, 0, 150); 
+    fill(0, 255, 0, 150); // Verde semi-transparente
     noStroke();
     
+    // Suporta Fila (BFS/DFS) e Fila de Prioridade (outros)
     let frontierArray = Array.isArray(currentSearch.frontier) ? currentSearch.frontier : currentSearch.frontier.items;
     
     if (frontierArray) {
