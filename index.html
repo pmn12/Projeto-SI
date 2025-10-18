@@ -56,10 +56,11 @@ s<!DOCTYPE html>
       border: 1px solid #333;
       width: 800px; /* Mesma largura do canvas */
       box-sizing: border-box; /* Garante que o padding não aumente a largura */
-      max-height: 80px; /* Define uma altura máxima. (Aprox. 3 linhas de 16px + padding) */
+      height: 90px; /* Define uma altura máxima. (Aprox. 3 linhas de 16px + padding) */
       overflow: hidden; /* 2. Diz o que fazer com o conteúdo que transborda: ESCONDA. */
-      transition: height 0.3s ease; /* 3. (Opcional) Faz a transição de altura ser suave */
-    }
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end; /* Alinha o <p> na parte de baixo da caixa */    }
 
     /* Estilo para o parágrafo da mensagem em si */
     #status-message {
