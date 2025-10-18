@@ -52,16 +52,37 @@ function setup() {
 }
 
 // --- FUNÇÃO DE DRAW DO P5.JS ---
+// --- FUNÇÃO DE DRAW DO P5.JS ---
 function draw() {
   background(51); 
+  
+  // 1. Desenha o grid (terrenos)
   drawGrid();
   
   // 2. LÓGICA DE ANIMAÇÃO DA BUSCA
   if (gameState === 'SEARCHING' && currentSearch) {
-    // ... (esta parte continua igual) ...
+    
+    // *** CORREÇÃO: DESCOMENTE ESTA LINHA ***
+    currentSearch.step(); 
+
+    // Verifica se a busca terminou
+    if (currentSearch.status === 'FOUND') {
+      gameState = 'MOVING';
+      
+      // Inicializa o movimento
+      currentPath = currentSearch.path; // Salva o caminho
+      pathIndex = 0; // Começa do primeiro nó (posição inicial)
+      movementTimer = millis(); // Reseta o timer de movimento
+      
+      statusDisplay.html("Caminho encontrado! Movendo o agente...");
+      
+    } else if (currentSearch.status === 'FAILED') {
+      gameState = 'IDLE';
+      statusDisplay.html("Falha na busca: Não foi possível encontrar um caminho!");
+    }
   }
   
-  // 3. DESENHA A VISUALIZAÇÃO
+  // 3. DESENHA A VISUALIZAÇÃO (VISITADOS / FRONTEIRA)
   if (currentSearch) {
     drawSearchVisualization();
   }
@@ -86,7 +107,6 @@ function draw() {
   }
   
   // 7. Desenha a comida e o agente
-  // (A função drawFood() em entities.js já deve ter "if (!food) return;")
   drawFood(); 
   drawAgent();
 }
