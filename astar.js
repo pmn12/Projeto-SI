@@ -1,108 +1,68 @@
-// astar.js — A* no teu grid (usa COLS, ROWS, grid, OBSTACLE e os terrenos)
+// --- NOVO ARQUIVO: astar.js ---
 
-// ---------- Heurísticas ----------
-function hManhattan(a, b) {
-  return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
-}
+class AstarSearch {
+  constructor(start, goal) {
+    this.start = start;
+    this.goal = goal;
+    
+    // A* usa uma Fila de Prioridade ordenada por 'f' (g + h)
+    this.frontier = new PriorityQueue((a, b) => a.f - b.f);
+    
+    // Guarda o menor custo 'g' (real) encontrado até agora
+    this.costSoFar = new Map();
+    
+    // Inicializa a busca
+    this.start.g = 0;
+    this.start.h = manhattanDistance(this.start, this.goal);
+    this.start.f = this.start.g + this.start.h;
+    
+    this.frontier.enqueue(this.start);
+    this.costSoFar.set(posToString(this.start), 0);
+    
+    this.status = 'SEARCHING';
+    this.path = [];
+  }
 
-// ---------- Util ----------
-function inBounds(x, y) {
-  return x >= 0 && x < COLS && y >= 0 && y < ROWS;
-}
-function isPassable(x, y) {
-  return inBounds(x, y) && grid[x][y] !== OBSTACLE;
-}
-function moveCost(to) {
-  const t = grid[to.x][to.y];
-  if (t === TERRAIN_LOW_COST)   return 1; // areia
-  if (t === TERRAIN_MEDIUM_COST)return 2; // atoleiro
-  if (t === TERRAIN_HIGH_COST)  return 3; // água
-  return 1; // fallback
-}
+  step() {
+    if (this.status !== 'SEARCHING') return;
 
-// ---------- A* principal ----------
-function aStarGrid(start, goal, { diagonals = false } = {}) {
-  const key = (x, y) => `${x},${y}`;
-  const unkey = k => {
-    const [x, y] = k.split(',').map(Number);
-    return { x, y };
-  };
-
-  const dirs4 = [[1,0],[-1,0],[0,1],[0,-1]];
-  const dirs8 = [...dirs4, [1,1],[1,-1],[-1,1],[-1,-1]];
-
-  const open = new Set();
-  const closed = new Set();
-  const cameFrom = new Map();
-  const g = new Map();
-  const f = new Map();
-
-  const sK = key(start.x, start.y);
-  const gK = key(goal.x,  goal.y);
-
-  g.set(sK, 0);
-  f.set(sK, hManhattan(start, goal));
-  open.add(sK);
-
-  while (open.size) {
-    // extrai o de menor f (simples e suficiente aqui)
-    let curK = null, curF = Infinity;
-    for (const k of open) {
-      const fk = f.get(k) ?? Infinity;
-      if (fk < curF) { curF = fk; curK = k; }
+    if (this.frontier.isEmpty()) {
+      this.status = 'FAILED';
+      console.log("A* Falhou: Fronteira vazia.");
+      return;
     }
 
-    if (curK === gK) return reconstructPath(curK, cameFrom, unkey);
+    // 1. Pega o nó de menor custo 'f' (melhor estimativa)
+    let current = this.frontier.dequeue();
 
-    open.delete(curK);
-    closed.add(curK);
+    // 2. Checa se é o objetivo
+    if (current.x === this.goal.x && current.y === this.goal.y) {
+      this.status = 'FOUND';
+      this.path = reconstructPath(current);
+      console.log("A* Encontrou o caminho!");
+      return;
+    }
 
-    const { x, y } = unkey(curK);
-    const dirs = diagonals ? dirs8 : dirs4;
-
-    for (const [dx, dy] of dirs) {
-      const nx = x + dx, ny = y + dy;
-      const nK = key(nx, ny);
-
-      // checa passabilidade + evita cortar quina em diagonal
-      if (!isPassable(nx, ny)) continue;
-      if (diagonals && Math.abs(dx) + Math.abs(dy) === 2) {
-        // se um dos adjacentes ortogonais for parede, não permite diagonal
-        if (!isPassable(x + dx, y) || !isPassable(x, y + dy)) continue;
-      }
-      if (closed.has(nK)) continue;
-
-      const tentativeG = (g.get(curK) ?? Infinity) + moveCost({ x: nx, y: ny });
-      if (tentativeG < (g.get(nK) ?? Infinity)) {
-        cameFrom.set(nK, curK);
-        g.set(nK, tentativeG);
-        f.set(nK, tentativeG + hManhattan({ x: nx, y: ny }, goal));
-        open.add(nK);
+    // 3. Pega os vizinhos
+    let neighbors = getNeighbors(current);
+    
+    for (let neighbor of neighbors) {
+      // 4. Calcula o novo custo 'g' (real) para este vizinho
+      let newCostG = current.g + getCellCost(neighbor.x, neighbor.y);
+      let neighborKey = posToString(neighbor);
+      
+      // 5. Se nunca vimos OU achamos um caminho mais barato...
+      if (!this.costSoFar.has(neighborKey) || newCostG < this.costSoFar.get(neighborKey)) {
+        this.costSoFar.set(neighborKey, newCostG); // Atualiza o custo
+        
+        // Atualiza todos os custos do vizinho
+        neighbor.g = newCostG;
+        neighbor.h = manhattanDistance(neighbor, this.goal);
+        neighbor.f = neighbor.g + neighbor.h;
+        neighbor.parent = current;
+        
+        this.frontier.enqueue(neighbor); // Adiciona na fronteira
       }
     }
   }
-  return null; // sem caminho
-}
-
-function reconstructPath(endK, cameFrom, unkey) {
-  const out = [];
-  let k = endK;
-  while (k) {
-    out.push(unkey(k));
-    k = cameFrom.get(k);
-  }
-  return out.reverse();
-}
-
-// ---------- helper de desenho (opcional) ----------
-function drawAStarPath(path) {
-  if (!path || !path.length) return;
-  noFill();
-  stroke(30, 200, 90);
-  strokeWeight(Math.min(cellWidth, cellHeight) * 0.35);
-  beginShape();
-  for (const p of path) {
-    vertex((p.x + 0.5) * cellWidth, (p.y + 0.5) * cellHeight);
-  }
-  endShape();
 }
