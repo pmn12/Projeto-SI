@@ -47,8 +47,9 @@ function setup() {
 
 // --- FUNÇÃO DE DRAW DO P5.JS ---
 // (Executada 60x por segundo em loop)
+// --- FUNÇÃO DE DRAW DO P5.JS ---
 function draw() {
-  background(51); // Limpa a tela
+  background(51); 
   
   // 1. Desenha o grid (terrenos)
   drawGrid();
@@ -58,21 +59,30 @@ function draw() {
     // 2a. Executa UM passo do algoritmo
     currentSearch.step(); 
 
-    // 2b. Desenha a visualização (fronteira e visitados)
-    drawSearchVisualization(); 
-
-    // 2c. Verifica se a busca terminou
+    // 2b. Verifica se a busca terminou
     if (currentSearch.status === 'FOUND') {
-      gameState = 'MOVING'; // Próximo estado (Pessoa 4)
+      gameState = 'MOVING';
       console.log("Caminho encontrado!");
-      // Futuramente, chamaremos drawPath(currentSearch.path) aqui
     } else if (currentSearch.status === 'FAILED') {
       gameState = 'IDLE';
       console.log("Não foi possível encontrar um caminho!");
     }
   }
   
-  // 3. Desenha a comida e o agente por cima de tudo
+  // 3. DESENHA A VISUALIZAÇÃO (VISITADOS / FRONTEIRA)
+  // *** MUDANÇA: Movido para fora do if(SEARCHING) ***
+  // Agora a "trilha" de visitados não vai sumir
+  if (currentSearch) {
+    drawSearchVisualization();
+  }
+  
+  // 4. DESENHA O CAMINHO FINAL
+  // (Só desenha se a busca achou e está no estado 'MOVING')
+  if (gameState === 'MOVING' && currentSearch && currentSearch.path) {
+    drawFinalPath(currentSearch.path); // Nova função!
+  }
+  
+  // 5. Desenha a comida e o agente por cima de tudo
   drawFood();
   drawAgent();
 }
@@ -188,28 +198,51 @@ function generateNewWorld() {
 
 // --- FUNÇÃO PARA DESENHAR A ANIMAÇÃO DA BUSCA ---
 // (Esta é a tarefa da Pessoa 2, mas deixamos um placeholder)
+// --- FUNÇÃO PARA DESENHAR A ANIMAÇÃO DA BUSCA ---
 function drawSearchVisualization() {
-  if (!currentSearch) return; // Não faz nada se não houver busca
+  if (!currentSearch) return; 
 
-  // 1. Desenha os nós VISITADOS
+  // 1. Desenha os nós VISITADOS (Sempre, após a busca iniciar)
   fill(0, 255, 255, 100); // Ciano semi-transparente
   noStroke();
-  
-  // (Verifica se 'visited' existe e é um Set, como planejado)
   if (currentSearch.visited && currentSearch.visited instanceof Set) {
     for (let node of currentSearch.visited) {
       rect(node.x * cellWidth, node.y * cellHeight, cellWidth, cellHeight);
     }
   }
 
-  // 2. Desenha a FRONTEIRA
-  fill(0, 255, 0, 150); // Verde semi-transparente
-  noStroke();
-  
-  // (Verifica se 'frontier' existe e é um Array, como planejado)
-  if (currentSearch.frontier && Array.isArray(currentSearch.frontier)) {
-    for (let node of currentSearch.frontier) {
-      rect(node.x * cellWidth, node.y * cellHeight, cellWidth, cellHeight);
+  // 2. Desenha a FRONTEIRA (Apenas DURANTE a busca)
+  // *** MUDANÇA: Adicionado "gameState === 'SEARCHING'" ***
+  if (gameState === 'SEARCHING' && currentSearch.frontier) {
+    fill(0, 255, 0, 150); // Verde semi-transparente
+    noStroke();
+    
+    // Suporta Fila (BFS/DFS) e Fila de Prioridade (outros)
+    let frontierArray = Array.isArray(currentSearch.frontier) ? currentSearch.frontier : currentSearch.frontier.items;
+    
+    if (frontierArray) {
+      for (let node of frontierArray) {
+        rect(node.x * cellWidth, node.y * cellHeight, cellWidth, cellHeight);
+      }
     }
   }
+}
+
+// --- NOVA FUNÇÃO PARA DESENHAR O CAMINHO FINAL ---
+function drawFinalPath(path) {
+  // Desenha uma linha amarela grossa no centro das células do caminho
+  stroke(255, 255, 0); // Amarelo
+  strokeWeight(4);
+  noFill();
+  
+  // Começa a desenhar a linha
+  beginShape();
+  for (let node of path) {
+    // Calcula o centro da célula
+    let cx = (node.x + 0.5) * cellWidth;
+    let cy = (node.y + 0.5) * cellHeight;
+    // Adiciona um vértice da linha nesse centro
+    vertex(cx, cy);
+  }
+  endShape();
 }
