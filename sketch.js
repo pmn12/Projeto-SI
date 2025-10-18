@@ -168,13 +168,15 @@ function createUI() {
 function selectAlgorithm(algo, clickedButton, allButtons) {
   if (gameState === 'SEARCHING') return; 
 
-  currentAlgorithm = algo;
-  updateStatusMessage("Algoritmo selecionado:", currentAlgorithm);
+currentAlgorithm = algo;
+  
+  // *** CORREÇÃO 1: Junte a mensagem em uma única string ***
+  updateStatusMessage(`Algoritmo selecionado: ${currentAlgorithm}.`);
 
-  for (let btn of allButtons) {
-    btn.removeClass('active');
-  }
-  clickedButton.addClass('active');
+  for (let btn of allButtons) {
+    btn.removeClass('active');
+  }
+  clickedButton.addClass('active');
 
   statusDisplay = createP('Carregando...'); // Cria um <p> com texto inicial
   statusDisplay.id('status-message'); // Dá a ele o ID "status-message"
@@ -238,6 +240,7 @@ function generateNewWorld() {
 updateStatusMessage("Novo mapa gerado. Selecione um algoritmo.");}
 
 // --- NOVA FUNÇÃO: ATUALIZA O LOG DE STATUS ---
+// --- NOVA FUNÇÃO: ATUALIZA O LOG DE STATUS ---
 function updateStatusMessage(newMessage) {
   // 1. Adiciona a nova mensagem ao log
   messageLog.push(newMessage);
@@ -252,7 +255,9 @@ function updateStatusMessage(newMessage) {
 
   // 4. Atualiza o display
   if (statusDisplay) { // Garante que o display já foi criado
-   updateStatusMessage(htmlString);
+    
+    // *** CORREÇÃO: Chame .html() e não a si mesma ***
+    statusDisplay.html(htmlString);
   }
 }
 
