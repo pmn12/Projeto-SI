@@ -1,6 +1,6 @@
 // --- CONFIGURAÇÕES GLOBAIS ---
-const COLS = 40;
-const ROWS = 30;
+const COLS = 20;
+const ROWS = 15;
 const CANVAS_WIDTH = 800;
 const CANVAS_HEIGHT = 600;
 
