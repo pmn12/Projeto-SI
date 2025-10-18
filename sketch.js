@@ -31,6 +31,9 @@ function preload() {
 // --- FUNÇÃO DE SETUP DO P5.JS ---
 // (Executada uma vez no início)
 function setup() {
+  
+frameRate(30);
+  
   createCanvas(CANVAS_WIDTH, CANVAS_HEIGHT);
   imageMode(CENTER); // Facilita desenhar imagens pelo centro
 
