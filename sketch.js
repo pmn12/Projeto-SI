@@ -249,30 +249,40 @@ function drawFinalPath(path) {
   }
   endShape();
 }
+// --- NOVA FUNÇÃO: CONTROLA O MOVIMENTO DO AGENTE ---
 function handleAgentMovement() {
-  // ... (código para verificar o fim do caminho) ...
-
-  let nextNode = currentPath[pathIndex + 1];
-  let cost = getCellCost(nextNode.x, nextNode.y); // Pega o custo do terreno
-
-  // --- A VELOCIDADE É DEFINIDA AQUI ---
-  
-  // 1. Define o ATRASO (delay) em milissegundos
-  let delay = 1000; // 100ms para Custo Baixo (areia)
-  if (cost === 5) { // 400ms para Custo Médio (atoleiro)
-    delay = 4000; 
-  } else if (cost === 10) { // 800ms para Custo Alto (água)
-    delay = 8000;
+  // 1. Verifica se já chegou ao fim do caminho
+  if (pathIndex >= currentPath.length - 1) {
+    handleFoodCollection();
+    return;
   }
-  // ------------------------------------
 
-  // 2. Verifica se o tempo (millis()) passou do atraso
+  // 2. Pega o PRÓXIMO nó para onde queremos ir
+  let nextNode = currentPath[pathIndex + 1];
+
+  // 3. Pega o CUSTO do terreno daquele próximo nó
+  let cost = getCellCost(nextNode.x, nextNode.y);
+
+  // 4. Define o DELAY (em milissegundos) baseado no custo
+  // !!! TENTE AUMENTAR ESTES VALORES BASTANTE PARA TESTAR !!!
+  let delay = 100; // Custo baixo (areia)
+  if (cost === 5) { // Custo médio (atoleiro)
+    delay = 1000; // (1 segundo)
+  } else if (cost === 10) { // Custo alto (água)
+    delay = 3000; // (3 segundos)
+  }
+
+  // --- !!! ADICIONE ESTA LINHA PARA DEPURAR !!! ---
+  console.log(`Próximo passo: Custo ${cost}, Delay ${delay}ms`);
+  // ----------------------------------------------------
+
+  // 5. Verifica se o timer passou do delay
   if (millis() - movementTimer > delay) {
-    // 3. Se passou, move o agente
+    // ... (resto da função é igual)
     pathIndex++;
     let newPosNode = currentPath[pathIndex];
     agent.x = newPosNode.x;
     agent.y = newPosNode.y;
-    movementTimer = millis(); // Reseta o timer
+    movementTimer = millis();
   }
 }
