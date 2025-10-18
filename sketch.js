@@ -59,37 +59,12 @@ function draw() {
   // 1. Desenha o grid (terrenos)
   drawGrid();
   
-  // NOVO: 2. Desenha a comida por cima do grid
-function drawFood() {
-  // NOVO: Verifica se a imagem já foi carregada
-  if (!food || !imgFood) return; 
-
-  // Calcula o centro da célula (exatamente como antes)
-  let cx = (food.x + 0.5) * cellWidth;
-  let cy = (food.y + 0.5) * cellHeight;
+  // ALTERADO: 2. CHAMA a função de desenhar a comida
+  drawFood();
   
-  // REMOVEMOS: fill(), stroke(), ellipse()...
-
-  // NOVO: Desenha a imagem da comida
-  // Usamos 0.6 * cellWidth para a comida ser um pouco menor
-  image(imgFood, cx, cy, cellWidth * 0.6, cellHeight * 0.6);
-}  
-  // NOVO: 3. Desenha o agente por cima do grid
-function drawAgent() {
-  // NOVO: Verifica se a imagem já foi carregada
-  if (!agent || !imgAgent) return; 
-
-  // Calcula o centro da célula (exatamente como antes)
-  let cx = (agent.x + 0.5) * cellWidth;
-  let cy = (agent.y + 0.5) * cellHeight;
-
-  // REMOVEMOS: fill(), stroke(), triangle()...
-  
-  // NOVO: Desenha a imagem do agente
-  // image(imagem, x_centro, y_centro, largura, altura)
-  // Usamos 0.8 * cellWidth para a imagem ser um pouco menor que a célula
-  image(imgAgent, cx, cy, cellWidth * 0.8, cellHeight * 0.8);
-}}
+  // ALTERADO: 3. CHAMA a função de desenhar o agente
+  drawAgent();
+}
 
 // --- FUNÇÃO PARA GERAR O MAPA ALEATÓRIO ---
 function generateRandomMap() {
@@ -165,43 +140,32 @@ function findValidPosition() {
 }
 
 // --- NOVO: FUNÇÃO PARA DESENHAR O AGENTE ---
+// --- FUNÇÃO PARA DESENHAR O AGENTE ---
+// *** CÓDIGO ATUALIZADO PARA USAR IMAGEM ***
 function drawAgent() {
-  if (!agent) return; // Não desenha se o agente ainda não foi criado
+  // Verifica se a imagem já foi carregada
+  if (!agent || !imgAgent) return; 
 
-  // Calcula o centro da célula do agente em pixels
+  // Calcula o centro da célula (exatamente como antes)
   let cx = (agent.x + 0.5) * cellWidth;
   let cy = (agent.y + 0.5) * cellHeight;
 
-  // Desenha um triângulo (como no seu rascunho)
-  fill(50, 50, 50); // Cinza escuro
-  stroke(0);
-  strokeWeight(1);
-  
-  let h = cellHeight * 0.6; // Altura do triângulo
-  let w = cellWidth * 0.6;  // Largura do triângulo
-  
-  triangle(
-    cx, cy - h / 2,         // Ponto de cima
-    cx - w / 2, cy + h / 2, // Ponto de baixo-esquerda
-    cx + w / 2, cy + h / 2  // Ponto de baixo-direita
-  );
+  // Desenha a imagem do agente
+  image(imgAgent, cx, cy, cellWidth * 0.8, cellHeight * 0.8);
 }
 
-// --- NOVO: FUNÇÃO PARA DESENHAR A COMIDA ---
+// --- FUNÇÃO PARA DESENHAR A COMIDA ---
+// *** CÓDIGO ATUALIZADO PARA USAR IMAGEM ***
 function drawFood() {
-  if (!food) return; // Não desenha se a comida ainda não foi criada
+  // Verifica se a imagem já foi carregada
+  if (!food || !imgFood) return; 
 
-  // Calcula o centro da célula da comida em pixels
+  // Calcula o centro da célula (exatamente como antes)
   let cx = (food.x + 0.5) * cellWidth;
   let cy = (food.y + 0.5) * cellHeight;
-  
-  // Desenha uma elipse laranja (similar à estrela do rascunho)
-  fill(255, 165, 0); // Laranja
-  stroke(0);
-  strokeWeight(1);
 
-  // Tamanho um pouco menor que a célula
-  ellipse(cx, cy, cellWidth * 0.5, cellHeight * 0.5);
+  // Desenha a imagem da comida
+  image(imgFood, cx, cy, cellWidth * 0.6, cellHeight * 0.6);
 }
 
 
