@@ -64,9 +64,9 @@ function draw() {
   drawGrid();
   
   // 2. LÓGICA DE ANIMAÇÃO DA BUSCA
-if (gameState === 'SEARCHING' && currentSearch && (frameCount % 3 === 0)) {    
-    // *** CORREÇÃO: DESCOMENTE ESTA LINHA ***
-    currentSearch.step(); 
+if (gameState === 'SEARCHING' && currentSearch && (frameCount % 4 === 0)) {    
+
+  currentSearch.step(); 
 
     // Verifica se a busca terminou
     if (currentSearch.status === 'FOUND') {
