@@ -109,7 +109,7 @@ python -m http.server 8000
   - ⏱️ Tempo de busca
   - 🍎 Comidas coletadas
 
-### 📊 **Modo Comparativo** (⭐ Novo!)
+### 📊 **Modo Comparativo**
 - **Execução Simultânea**: Rode todos os algoritmos no mesmo mapa
 - **Comparação Justa**: Mesmo ambiente, mesma posição inicial e objetivo
 - **Análise de Performance**: Tabela comparativa com todas as métricas
