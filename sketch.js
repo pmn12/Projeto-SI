@@ -16,9 +16,10 @@ let currentSearch = null;
 let currentAlgorithm = 'BFS'; 
 let gameState = 'IDLE';      
 let isPaused = false;
+let isSearchActive = false; // Controla se o ciclo contínuo está ativo
 
 // Variáveis para guardar os botões da UI
-let btnBFS, btnDFS, btnUCS, btnGreedy, btnAstar;
+let btnBFS, btnDFS, btnUCS, btnGreedy, btnAstar, btnAG;
 let btnPlayPause, btnNewMap;
 
 // Variáveis para controle de velocidade
@@ -36,7 +37,7 @@ let statusDisplay;
 
 // NOVO: Variáveis para o log de mensagens
 let messageLog = [];
-const MAX_LOG_LINES = 3;
+const MAX_LOG_LINES = 300;
 
 // --- VARIÁVEIS DE MÉTRICAS ---
 let metrics = {
@@ -66,10 +67,15 @@ let comparisonResults = [];
 
 // --- VARIÁVEIS PARA COMPARATIVO ---
 let isRunningComparison = false;
-let comparisonAlgorithms = ['BFS', 'DFS', 'UCS', 'Gulosa', 'A*'];
+let comparisonAlgorithms = ['BFS', 'DFS', 'UCS', 'Gulosa', 'A*', 'AG'];
 let comparisonPaths = {}; // Armazena os caminhos de cada algoritmo
 let currentComparisonAlgorithm = null;
 let comparisonAnimationId = null;
+
+// --- VARIÁVEIS PARA ALGORITMO GENÉTICO ---
+let algoritmoGenetico = null;
+let agExecutando = false;
+let agCallback = null;
 
 // --- FUNÇÃO PRELOAD DO P5.JS ---
 function preload() {
@@ -127,13 +133,23 @@ function draw() {
       // Calcula métricas finais
       calculateSearchMetrics();
       
-      // Coleta a comida
+      // Coleta a comida e reinicia o mapa
       collectFood();
       
     } else if (currentSearch.status === 'FAILED') {
       gameState = 'IDLE';
-      updatePlayPauseButton('▶️ INICIAR BUSCA', false);
-      updateStatusMessage("Falha na busca: Não foi possível encontrar um caminho!");
+      
+      // Se o ciclo está ativo, gera novo mapa e continua
+      if (isSearchActive) {
+        updateStatusMessage("⚠️ Falha na busca. Gerando novo mapa...");
+        setTimeout(() => {
+          resetMapAndGenerateNewFood();
+        }, 2000);
+      } else {
+        // Se o ciclo não está ativo, apenas para
+        updatePlayPauseButton('▶️ INICIAR BUSCA', false);
+        updateStatusMessage("Falha na busca: Não foi possível encontrar um caminho!");
+      }
     }
   }
   
@@ -245,16 +261,15 @@ function collectFood() {
   foodCollectionAnimation = true;
   foodCollectionTimer = millis();
   
-  // Remove a comida do ambiente
-  food = null;
-  
   // Atualiza status
   updateStatusMessage(`🍎 Comida coletada! Total: ${metrics.foodCollected}`);
   
   // Reinicia o mapa e gera nova comida após um delay maior para mostrar o caminho
+  // A comida só é removida aqui, depois do delay
   setTimeout(() => {
+    food = null; // Remove a comida agora
     resetMapAndGenerateNewFood();
-  }, 3000); // Aumentei o delay para 3s para mostrar o caminho
+  }, 3000); // 3s para mostrar o caminho com a comida visível
 }
 
 // --- FUNÇÃO PARA RESETAR MAPA E GERAR NOVA COMIDA ---
@@ -292,14 +307,18 @@ function resetMapAndGenerateNewFood() {
   foodCollectionAnimation = false;
   foodCollectionTimer = 0;
   
-  // Atualiza botão
-  updatePlayPauseButton('▶️ INICIAR BUSCA', false);
+  // Atualiza botão apenas se o ciclo não estiver ativo
+  if (!isSearchActive) {
+    updatePlayPauseButton('▶️ INICIAR BUSCA', false);
+  } else {
+    updatePlayPauseButton('⏸️ PAUSAR BUSCA', false);
+  }
   
   updateStatusMessage("Novo mapa gerado! Reiniciando busca automaticamente...");
   
-  // Reinicia a busca automaticamente após um pequeno delay
+  // Reinicia a busca automaticamente apenas se o ciclo estiver ativo
   setTimeout(() => {
-    if (currentAlgorithm && gameState === 'IDLE') {
+    if (currentAlgorithm && gameState === 'IDLE' && isSearchActive) {
       startSearch();
     }
   }, 1000);
@@ -375,6 +394,7 @@ function createAlgorithmSection() {
   btnUCS = createButton('UCS - Custo Uniforme');
   btnGreedy = createButton('Gulosa - Heurística');
   btnAstar = createButton('A* - A-Estrela');
+  btnAG = createButton('🧬 AG - Genético');
   
   // Define o 'pai' (o container de algoritmos)
   btnBFS.parent(algoContainer);
@@ -382,9 +402,10 @@ function createAlgorithmSection() {
   btnUCS.parent(algoContainer);
   btnGreedy.parent(algoContainer);
   btnAstar.parent(algoContainer);
+  btnAG.parent(algoContainer);
 
   // Agrupa os botões de algoritmo
-  let algoButtons = [btnBFS, btnDFS, btnUCS, btnGreedy, btnAstar];
+  let algoButtons = [btnBFS, btnDFS, btnUCS, btnGreedy, btnAstar, btnAG];
 
   // Vincula as funções de callback
   btnBFS.mousePressed(() => selectAlgorithm('BFS', btnBFS, algoButtons));
@@ -392,6 +413,7 @@ function createAlgorithmSection() {
   btnUCS.mousePressed(() => selectAlgorithm('UCS', btnUCS, algoButtons));
   btnGreedy.mousePressed(() => selectAlgorithm('Gulosa', btnGreedy, algoButtons));
   btnAstar.mousePressed(() => selectAlgorithm('A*', btnAstar, algoButtons));
+  btnAG.mousePressed(() => selectAlgorithm('AG', btnAG, algoButtons));
   
   // Ativa o BFS por padrão
   btnBFS.addClass('active'); 
@@ -593,6 +615,7 @@ function updateMetrics() {
   // Atualiza tempo de busca (formatado em segundos com 2 casas decimais)
   const searchTimeEl = document.getElementById('search-time');
   if (searchTimeEl) {
+    // metrics.searchTime já está em milissegundos (performance.now())
     let timeInSeconds = (metrics.searchTime / 1000).toFixed(2);
     searchTimeEl.textContent = timeInSeconds + 's';
   }
@@ -632,7 +655,7 @@ function calculateSearchMetrics() {
   
   // Calcula tempo de busca
   if (gameState === 'SEARCHING' && metrics.searchStartTime > 0) {
-    metrics.searchTime = millis() - metrics.searchStartTime;
+    metrics.searchTime = performance.now() - metrics.searchStartTime;
   }
 }
 
@@ -641,30 +664,49 @@ function calculatePathCost(path) {
   let totalCost = 0;
   for (let i = 0; i < path.length - 1; i++) {
     let node = path[i];
-    totalCost += getCellCost(node.x, node.y);
+    let cost = getCellCost(node.x, node.y);
+    // Se o custo for Infinity, ignora essa posição
+    if (cost === Infinity) {
+      continue;
+    }
+    totalCost += cost;
   }
   return totalCost;
 }
 
 // --- FUNÇÃO PARA ALTERNAR PLAY/PAUSE ---
 function togglePlayPause() {
-  if (gameState === 'IDLE' || gameState === 'PAUSED') {
-    // Iniciar ou continuar busca
-    if (!currentSearch) {
+  if (!isSearchActive) {
+    // INICIAR CICLO CONTÍNUO
+    isSearchActive = true;
+    
+    if (gameState === 'IDLE') {
+      // Inicia primeira busca
       startSearch();
       updatePlayPauseButton('⏸️ PAUSAR BUSCA', false);
-    } else {
+      updateStatusMessage('🚀 Ciclo contínuo iniciado!');
+    } else if (gameState === 'PAUSED') {
+      // Retoma busca pausada
       gameState = 'SEARCHING';
       isPaused = false;
       updatePlayPauseButton('⏸️ PAUSAR BUSCA', false);
-      updateStatusMessage('Busca retomada.');
+      updateStatusMessage('🚀 Ciclo contínuo retomado!');
     }
-  } else if (gameState === 'SEARCHING') {
-    // Pausar busca
-    gameState = 'PAUSED';
-    isPaused = true;
-    updatePlayPauseButton('▶️ CONTINUAR BUSCA', false);
-    updateStatusMessage('Busca pausada.');
+  } else {
+    // PAUSAR CICLO CONTÍNUO
+    isSearchActive = false;
+    
+    if (gameState === 'SEARCHING') {
+      // Pausa a busca atual
+      gameState = 'PAUSED';
+      isPaused = true;
+      updatePlayPauseButton('▶️ INICIAR BUSCA', false);
+      updateStatusMessage('⏸️ Ciclo contínuo pausado.');
+    } else {
+      // Se está entre rodadas (IDLE, COLLECTING, etc), apenas desativa o ciclo
+      updatePlayPauseButton('▶️ INICIAR BUSCA', false);
+      updateStatusMessage('⏸️ Ciclo contínuo desativado.');
+    }
   }
 }
 
@@ -856,6 +898,12 @@ async function runSingleComparisonOnMap(algorithm, startPos, goalPos, originalGr
     let startNode = new Node(startPos.x, startPos.y);
     let goalNode = new Node(goalPos.x, goalPos.y);
     
+    // Verifica se é Algoritmo Genético
+    if (algorithm === 'AG') {
+      executarAGComparativo(startPos, goalPos, originalGrid, resolve);
+      return;
+    }
+    
     let searchInstance;
     switch (algorithm) {
       case 'BFS': searchInstance = new BfsSearch(startNode, goalNode); break;
@@ -940,6 +988,105 @@ async function runSingleComparisonOnMap(algorithm, startPos, goalPos, originalGr
   });
 }
 
+/**
+ * Executa o Algoritmo Genético no modo comparativo
+ */
+async function executarAGComparativo(startPos, goalPos, originalGrid, resolve) {
+  const startTime = performance.now();
+  
+  try {
+    const ag = criarAlgoritmoGenetico();
+    
+    console.log('🧬 Executando AG no comparativo...');
+    
+    // Executa AG normalmente (para quando encontra)
+    const melhorIndividuo = await ag.executar(
+      originalGrid,
+      startPos,
+      goalPos,
+      null,  // sem callback
+      false  // forcarTodasGeracoes = false (para quando encontra)
+    );
+    
+    const endTime = performance.now();
+    const searchTime = endTime - startTime;
+    
+    // Converte cromossomo em caminho para calcular métricas corretas
+    const caminho = ag.converterCromossomoParaCaminho(
+      melhorIndividuo.cromossomo,
+      startPos,
+      originalGrid
+    );
+    
+    // Calcula o custo real do caminho
+    let custoReal = 0;
+    for (let pos of caminho) {
+      if (pos.x >= 0 && pos.x < originalGrid.length && 
+          pos.y >= 0 && pos.y < originalGrid[0].length) {
+        const terreno = originalGrid[pos.x][pos.y];
+        switch(terreno) {
+          case 'TERRAIN_LOW_COST': custoReal += 1; break;
+          case 'TERRAIN_MEDIUM_COST': custoReal += 5; break;
+          case 'TERRAIN_HIGH_COST': custoReal += 10; break;
+          default: custoReal += 1;
+        }
+      }
+    }
+    
+    const success = melhorIndividuo.comidaColetada || melhorIndividuo.fitness >= 1000;
+    const nodesVisited = ag.historicoFitness.length * ag.tamanhoPopulacao; // Total de avaliações
+    const pathLength = caminho.length;
+    
+    // Debug
+    console.log('AG Comparativo - Debug:', {
+      geracoes: ag.historicoFitness.length,
+      populacao: ag.tamanhoPopulacao,
+      nodesVisited: nodesVisited,
+      pathLength: pathLength,
+      custoReal: custoReal,
+      searchTime: searchTime,
+      fitness: melhorIndividuo.fitness
+    });
+    
+    // Armazena o caminho encontrado com métricas corretas
+    comparisonPaths['AG'] = {
+      path: caminho.map(node => ({x: node.x, y: node.y})),
+      visited: [], // AG não tem conceito de "visitados" tradicional
+      frontier: [],
+      start: {x: startPos.x, y: startPos.y},
+      goal: {x: goalPos.x, y: goalPos.y},
+      // Armazena métricas corretas para visualização
+      nodesVisited: nodesVisited,
+      pathCost: custoReal,
+      pathLength: pathLength
+    };
+    
+    comparisonResults.push({
+      algorithm: 'AG',
+      success: success,
+      nodesVisited: nodesVisited,
+      frontierSize: 0,
+      pathCost: custoReal,
+      pathLength: pathLength,
+      searchTime: searchTime
+    });
+    
+    resolve();
+  } catch (error) {
+    console.error("Erro no AG no comparativo:", error);
+    comparisonResults.push({
+      algorithm: 'AG',
+      success: false,
+      nodesVisited: 0,
+      frontierSize: 0,
+      pathCost: 0,
+      pathLength: 0,
+      searchTime: 0
+    });
+    resolve();
+  }
+}
+
 
 function displayComparisonResults() {
   const resultsContainer = document.getElementById('comparison-results');
@@ -1017,9 +1164,18 @@ window.showAlgorithmPath = function(algorithm) {
   // Atualiza a mensagem de visualização
   const visualizationDiv = document.getElementById('path-visualization');
   if (visualizationDiv) {
-    let visitedCount = pathData.visited ? pathData.visited.length : 0;
-    let pathCost = pathData.path ? calculatePathCostFromNodes(pathData.path) : 0;
-    let pathLength = pathData.path ? pathData.path.length : 0;
+    // Usa métricas armazenadas se disponíveis (para AG), senão calcula
+    let visitedCount = pathData.nodesVisited !== undefined 
+      ? pathData.nodesVisited 
+      : (pathData.visited ? pathData.visited.length : 0);
+    
+    let pathCost = pathData.pathCost !== undefined 
+      ? pathData.pathCost 
+      : (pathData.path ? calculatePathCostFromNodes(pathData.path) : 0);
+    
+    let pathLength = pathData.pathLength !== undefined 
+      ? pathData.pathLength 
+      : (pathData.path ? pathData.path.length : 0);
     
     visualizationDiv.innerHTML = `
       <h4 style="color: #4CAF50; margin: 0 0 10px 0;">Caminho do ${algorithm}</h4>
@@ -1099,6 +1255,7 @@ function calculatePathCostFromNodes(pathNodes) {
         case TERRAIN_LOW_COST: totalCost += 1; break;
         case TERRAIN_MEDIUM_COST: totalCost += 5; break;
         case TERRAIN_HIGH_COST: totalCost += 10; break;
+        case OBSTACLE: continue; // Ignora obstáculos
         default: totalCost += 1; break;
       }
     }
@@ -1205,12 +1362,12 @@ function startSearch() {
     metrics.pathCost = 0;
     metrics.pathLength = 0;
     metrics.searchTime = 0;
-    metrics.searchStartTime = millis();
+    metrics.searchStartTime = performance.now();
     
     let startNode = new Node(agent.x, agent.y);
     let goalNode = new Node(food.x, food.y);
     
-    // O 'switch' de integração
+    // O 'switch' de integração para todos os algoritmos (incluindo AG)
     switch (currentAlgorithm) {
       case 'BFS':
         currentSearch = new BfsSearch(startNode, goalNode);
@@ -1227,6 +1384,9 @@ function startSearch() {
       case 'A*':
         currentSearch = new AstarSearch(startNode, goalNode);
         break;
+      case 'AG':
+        currentSearch = new AgSearch(startNode, goalNode);
+        break;
       default:
         console.error("Algoritmo desconhecido:", currentAlgorithm);
         return;
@@ -1238,6 +1398,97 @@ function startSearch() {
       updatePlayPauseButton('⏸️ PAUSAR BUSCA', false);
       updateStatusMessage(`Iniciando busca com ${currentAlgorithm}!`);
     }
+  }
+}
+
+/**
+ * Executa o Algoritmo Genético para encontrar o caminho
+ */
+async function executarAlgoritmoGenetico(startNode, goalNode) {
+  if (agExecutando) return;
+  
+  agExecutando = true;
+  gameState = 'SEARCHING';
+  updatePlayPauseButton('⏸️ PAUSAR BUSCA', false);
+  updateStatusMessage("🧬 Iniciando Algoritmo Genético...");
+  
+  // Cria instância do AG se não existir
+  if (!algoritmoGenetico) {
+    algoritmoGenetico = criarAlgoritmoGenetico();
+  }
+  
+  // Callback para atualização da UI durante a execução
+  agCallback = (dados) => {
+    updateStatusMessage(`🧬 AG - Geração ${dados.geracao}: Melhor = ${dados.melhorFitness.toFixed(2)}`);
+    
+    // Atualiza métricas
+    metrics.nodesVisited = dados.geracao * algoritmoGenetico.tamanhoPopulacao;
+    metrics.pathCost = dados.melhorIndividuo.custoTotal;
+    metrics.searchTime = performance.now() - metrics.searchStartTime; // Em ms
+    
+    updateMetrics();
+  };
+  
+  try {
+    // Executa o AG
+    const melhorIndividuo = await algoritmoGenetico.executar(
+      grid, 
+      {x: startNode.x, y: startNode.y}, 
+      {x: goalNode.x, y: goalNode.y},
+      agCallback
+    );
+    
+    // Converte cromossomo em caminho
+    const caminho = algoritmoGenetico.converterCromossomoParaCaminho(
+      melhorIndividuo.cromossomo,
+      {x: startNode.x, y: startNode.y},
+      grid
+    );
+    
+    // Converte caminho para formato do sistema
+    currentPath = caminho.map(pos => new Node(pos.x, pos.y));
+    
+    // Atualiza métricas finais
+    metrics.nodesVisited = algoritmoGenetico.historicoFitness.length * algoritmoGenetico.tamanhoPopulacao;
+    metrics.pathCost = melhorIndividuo.custoTotal;
+    metrics.pathLength = currentPath.length;
+    metrics.searchTime = performance.now() - metrics.searchStartTime; // Em ms
+    
+    // Debug: Log do resultado
+    console.log('AG Resultado:', {
+      fitness: melhorIndividuo.fitness,
+      comidaColetada: melhorIndividuo.comidaColetada,
+      distanciaFinal: melhorIndividuo.distanciaFinal,
+      passos: melhorIndividuo.passosUtilizados,
+      custo: melhorIndividuo.custoTotal
+    });
+    
+    // Verifica se encontrou a comida
+    const encontrou = melhorIndividuo.comidaColetada && melhorIndividuo.fitness >= 1000;
+    
+    if (encontrou) {
+      gameState = 'COLLECTING';
+      updatePlayPauseButton('▶️ INICIAR BUSCA', true);
+      updateStatusMessage(`🎯 AG encontrou solução! Fitness: ${melhorIndividuo.fitness.toFixed(2)}, Gerações: ${algoritmoGenetico.historicoFitness.length}`);
+      
+      // Coleta a comida automaticamente após um delay
+      setTimeout(() => {
+        collectFood();
+      }, 3000); // 3s para ver o caminho
+    } else {
+      gameState = 'FINISHED';
+      updatePlayPauseButton('▶️ INICIAR BUSCA', true);
+      updateStatusMessage(`⚠️ AG não encontrou solução. Fitness: ${melhorIndividuo.fitness.toFixed(2)}, Distância: ${melhorIndividuo.distanciaFinal}`);
+    }
+    
+  } catch (error) {
+    console.error("Erro no Algoritmo Genético:", error);
+    updateStatusMessage("❌ Erro no Algoritmo Genético");
+    gameState = 'IDLE';
+    updatePlayPauseButton('▶️ INICIAR BUSCA', false);
+  } finally {
+    agExecutando = false;
+    agCallback = null;
   }
 }
 
@@ -1299,6 +1550,11 @@ function updateStatusMessage(newMessage) {
     } else {
       statusDisplay.removeClass('finish-message');
     }
+    
+    // 6. Scroll automático para o final do chat
+    setTimeout(() => {
+      statusDisplay.elt.scrollTop = statusDisplay.elt.scrollHeight;
+    }, 10);
   }
 }
 
@@ -1314,6 +1570,11 @@ function drawSearchVisualization() {
   // Desenha visualização do comparativo
   if (window.currentPathData) {
     drawComparisonVisualization();
+  }
+  
+  // Desenha visualização do AG (se estiver executando)
+  if (agExecutando && algoritmoGenetico) {
+    drawAGVisualization();
   }
 }
 
@@ -1383,6 +1644,48 @@ function drawComparisonVisualization() {
       }
     }
   }
+}
+
+/**
+ * Desenha visualização do progresso do Algoritmo Genético
+ */
+function drawAGVisualization() {
+  if (!algoritmoGenetico || !algoritmoGenetico.melhorIndividuo) return;
+  
+  // Desenha informações do AG
+  fill(255, 255, 255);
+  textAlign(LEFT);
+  textSize(12);
+  
+  const stats = algoritmoGenetico.obterEstatisticas();
+  const y = 20;
+  
+  text(`🧬 Algoritmo Genético`, 10, y);
+  text(`Geração: ${stats.historicoFitness.length}`, 10, y + 15);
+  text(`Melhor Fitness: ${stats.melhorIndividuo.fitness.toFixed(2)}`, 10, y + 30);
+  text(`Comida Coletada: ${stats.melhorIndividuo.comidaColetada ? 'Sim' : 'Não'}`, 10, y + 45);
+  text(`Passos: ${stats.melhorIndividuo.passosUtilizados}`, 10, y + 60);
+  text(`Custo: ${stats.melhorIndividuo.custoTotal.toFixed(2)}`, 10, y + 75);
+  
+  // Desenha barra de progresso
+  const progresso = stats.historicoFitness.length / algoritmoGenetico.numeroGeracoes;
+  const barraWidth = 200;
+  const barraHeight = 8;
+  const barraX = 10;
+  const barraY = y + 95;
+  
+  // Fundo da barra
+  fill(100, 100, 100);
+  rect(barraX, barraY, barraWidth, barraHeight);
+  
+  // Preenchimento da barra
+  fill(76, 175, 80);
+  rect(barraX, barraY, barraWidth * progresso, barraHeight);
+  
+  // Texto de progresso
+  fill(255);
+  textAlign(CENTER);
+  text(`Progresso: ${(progresso * 100).toFixed(1)}%`, barraX + barraWidth/2, barraY + barraHeight + 15);
 }
 
 // --- FUNÇÃO PARA DESENHAR O CAMINHO FINAL ---
@@ -1491,4 +1794,158 @@ function handleFoodCollection() {
   
   // 3. RECOMEÇA A BUSCA!
   startSearch();
+}
+
+// --- CLASSE PARA ANIMAÇÃO DO ALGORITMO GENÉTICO ---
+class AgSearch {
+  constructor(start, goal) {
+    this.start = start;
+    this.goal = goal;
+    this.status = 'SEARCHING';
+    this.path = [];
+    this.visited = [];
+    this.frontier = [];
+    
+    // Inicializa o AG
+    this.ag = criarAlgoritmoGenetico();
+    this.agExecutando = false;
+    this.geracaoAtual = 0;
+    this.melhorIndividuo = null;
+    this.caminhoAtual = [];
+    
+    // Configura callback para animação
+    this.agCallback = (dados) => {
+      this.geracaoAtual = dados.geracao;
+      this.melhorIndividuo = dados.melhorIndividuo;
+      
+      // Converte cromossomo em caminho para visualização
+      if (this.melhorIndividuo) {
+        this.caminhoAtual = this.ag.converterCromossomoParaCaminho(
+          this.melhorIndividuo.cromossomo,
+          {x: this.start.x, y: this.start.y},
+          grid
+        );
+      }
+    };
+  }
+  
+  step() {
+    if (!this.agExecutando) {
+      // Inicia o AG
+      this.agExecutando = true;
+      this.executarAG();
+    }
+    
+    // Atualiza métricas e visualização
+    if (this.melhorIndividuo) {
+      metrics.nodesVisited = this.geracaoAtual * this.ag.tamanhoPopulacao;
+      metrics.frontierSize = this.ag.tamanhoPopulacao;
+      
+      // Atualiza caminho para visualização em tempo real
+      this.caminhoAtual = this.ag.converterCromossomoParaCaminho(
+        this.melhorIndividuo.cromossomo,
+        {x: this.start.x, y: this.start.y},
+        grid
+      );
+      
+      // Define visited como o caminho atual para visualização
+      this.visited = this.caminhoAtual;
+      this.frontier = []; // AG não tem conceito de fronteira tradicional
+      
+      // Atualiza métricas de caminho em tempo real
+      metrics.pathCost = this.calcularCustoCaminho(this.caminhoAtual);
+      metrics.pathLength = this.caminhoAtual.length;
+    }
+  }
+  
+  async executarAG() {
+    try {
+      const melhorIndividuo = await this.ag.executar(
+        grid,
+        {x: this.start.x, y: this.start.y},
+        {x: this.goal.x, y: this.goal.y},
+        this.agCallback
+      );
+      
+      // Verifica se encontrou solução (critério rigoroso - só para se coletou)
+      const encontrou = melhorIndividuo.comidaColetada;
+      
+      if (encontrou) {
+        this.status = 'FOUND';
+        this.path = this.caminhoAtual;
+        this.visited = this.caminhoAtual; // Para visualização
+        
+        // Atualiza métricas finais
+        metrics.nodesVisited = this.geracaoAtual * this.ag.tamanhoPopulacao;
+        metrics.frontierSize = 0; // AG não tem fronteira tradicional
+        metrics.pathCost = this.calcularCustoCaminho(this.caminhoAtual);
+        metrics.pathLength = this.caminhoAtual.length;
+        
+        // Log detalhado da tentativa bem-sucedida
+        // Exibe informações resumidas no statusMessage (sem arte ASCII no painel)
+        const tentativaInfo = `
+          🎯 AG encontrou a comida!
+          Fitness: ${melhorIndividuo.fitness.toFixed(2)}
+          Gerações: ${this.geracaoAtual}
+          População: ${this.ag.tamanhoPopulacao}
+          Nós Visitados: ${metrics.nodesVisited}
+          Custo do Caminho: ${metrics.pathCost}
+          Comprimento: ${metrics.pathLength}
+          Passos: ${melhorIndividuo.passosUtilizados}
+          Comida Coletada: ${melhorIndividuo.comidaColetada ? '✅ SIM' : '❌ NÃO'}
+          Tempo: ${(metrics.searchTime / 1000).toFixed(2)}s`;
+        // Mantém log detalhado apenas no console
+        console.log('==== Tentativa AG - Detalhes =====\n', tentativaInfo);
+        updateStatusMessage(tentativaInfo);
+      } else {
+        this.status = 'FAILED';
+        this.path = this.caminhoAtual; // Mostra melhor tentativa
+        this.visited = this.caminhoAtual;
+        
+        // Atualiza métricas finais mesmo se falhou
+        metrics.nodesVisited = this.geracaoAtual * this.ag.tamanhoPopulacao;
+        metrics.frontierSize = 0;
+        metrics.pathCost = this.calcularCustoCaminho(this.caminhoAtual);
+        metrics.pathLength = this.caminhoAtual.length;
+        
+        // Log detalhado da tentativa falha
+        const falhaInfo = `
+⚠️ ===== AG NÃO ENCONTROU SOLUÇÃO =====
+📊 Informações da Tentativa:
+   ├─ 🧬 Melhor Fitness: ${melhorIndividuo.fitness.toFixed(2)}
+   ├─ 🔢 Gerações: ${this.geracaoAtual}
+   ├─ 👥 População: ${this.ag.tamanhoPopulacao}
+   ├─ 🔍 Nós Visitados: ${metrics.nodesVisited}
+   ├─ 💰 Custo do Caminho: ${metrics.pathCost}
+   ├─ 📏 Comprimento: ${metrics.pathLength}
+   ├─ 👣 Passos Utilizados: ${melhorIndividuo.passosUtilizados}
+   └─ ⏱️ Tempo: ${(metrics.searchTime / 1000).toFixed(2)}s
+========================================`;
+        console.log(falhaInfo);
+        updateStatusMessage(falhaInfo);
+      }
+    } catch (error) {
+      console.error('Erro no AG:', error);
+      this.status = 'FAILED';
+    }
+  }
+  
+  /**
+   * Calcula o custo total de um caminho
+   */
+  calcularCustoCaminho(caminho) {
+    let custoTotal = 0;
+    for (let pos of caminho) {
+      if (pos.x >= 0 && pos.x < grid.length && pos.y >= 0 && pos.y < grid[0].length) {
+        const terreno = grid[pos.x][pos.y];
+        switch(terreno) {
+          case 'TERRAIN_LOW_COST': custoTotal += 1; break;
+          case 'TERRAIN_MEDIUM_COST': custoTotal += 5; break;
+          case 'TERRAIN_HIGH_COST': custoTotal += 10; break;
+          default: custoTotal += 1;
+        }
+      }
+    }
+    return custoTotal;
+  }
 }
