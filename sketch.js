@@ -299,7 +299,7 @@ function drawSearchVisualization() {
   // 2. Desenha a FRONTEIRA (Verde)
   // (Esta parte já estava correta)
   if (gameState === 'SEARCHING' && currentSearch.frontier) {
-    fill(0, 255, 0, 100); // Verde semi-transparente
+    fill(184, 58, 169, 100); // Verde semi-transparente
     noStroke();
     
     // Suporta Fila (BFS/DFS) e Fila de Prioridade (outros)
