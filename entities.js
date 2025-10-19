@@ -35,5 +35,12 @@ function drawFood() {
   let cx = (food.x + 0.5) * cellWidth;
   let cy = (food.y + 0.5) * cellHeight;
 
-  image(imgFood, cx, cy, cellWidth * 0.6, cellHeight * 0.6);
+  // Animação de coleta (pulsação)
+  let scale = 0.6;
+  if (foodCollectionAnimation) {
+    let pulse = sin(millis() * 0.01) * 0.2 + 0.8;
+    scale *= pulse;
+  }
+
+  image(imgFood, cx, cy, cellWidth * scale, cellHeight * scale);
 }
