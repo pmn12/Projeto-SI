@@ -123,18 +123,20 @@ function draw() {
 
     // Verifica se a busca terminou
     if (currentSearch.status === 'FOUND' && gameState === 'SEARCHING') {
-      // Muda o estado para evitar múltiplas execuções
-      gameState = 'COLLECTING';
+      // Muda o estado para MOVING
+      gameState = 'MOVING';
       
       // Define o caminho final encontrado
       currentPath = currentSearch.path;
       pathIndex = 0;
       
+      // Inicializa o timer de movimento
+      movementTimer = millis();
+      
       // Calcula métricas finais
       calculateSearchMetrics();
       
-      // Coleta a comida e reinicia o mapa
-      collectFood();
+      updateStatusMessage(`Caminho encontrado! Movendo agente...`);
       
     } else if (currentSearch.status === 'FAILED') {
       gameState = 'IDLE';
@@ -151,6 +153,11 @@ function draw() {
         updateStatusMessage("Falha na busca: Não foi possível encontrar um caminho!");
       }
     }
+  }
+  
+  // 2.5. LÓGICA DE MOVIMENTO DO AGENTE
+  if (gameState === 'MOVING') {
+    handleAgentMovement();
   }
   
   // 3. DESENHA A VISUALIZAÇÃO (VISITADOS / FRONTEIRA)
@@ -1745,22 +1752,9 @@ function handleAgentMovement() {
     
     // 5. O tempo de espera acabou. Vamos ver se já chegamos ao fim.
     if (pathIndex >= currentPath.length - 1) {
-      // Se sim, o agente estava esperando no último nó (o da comida).
-      // Agora iniciamos o timer de 5s de coleta.
+      // Agora chama collectFood em vez de só mudar estado
       gameState = 'COLLECTING';
-      collectionTimer = millis(); 
-      
-      // Ativa animação de coleta
-      foodCollectionAnimation = true;
-      foodCollectionTimer = millis();
-      
-      // Comida desaparece após um pequeno delay para mostrar a animação
-      setTimeout(() => {
-        food = null;
-        foodCollectionAnimation = false;
-      }, 1000);
-      
-      updateStatusMessage("Comida coletada! Aguardando 5s para a próxima rodada...");
+      collectFood();
       return;
     }
 
